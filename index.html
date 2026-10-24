@@ -1,0 +1,735 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0D1514">
+<meta name="apple-mobile-web-app-title" content="runSakhi">
+<title>runSakhi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+/* Layout: one narrow column, watch-style readout on top, big thumb controls, conversation and route below */
+:root{
+  --bg:#EEF1F0; --surface:#FFFFFF; --ink:#11201E; --muted:#5B6B68; --line:#D3DBD9;
+  --accent:#D9820C; --accent-ink:#1B1300; --go:#1F8A5B; --warn:#C0392B; --route:#2C6E8F;
+  --f-num:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0D1514; --surface:#16211F; --ink:#E8EFED; --muted:#8FA19D; --line:#26332F;
+  --accent:#F2A93B; --accent-ink:#1B1300; --go:#3DBB84; --warn:#F06A5B; --route:#6FB6D8; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--f-body);
+  padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px;padding-top:12px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font:700 1.6rem/1 var(--f-num);letter-spacing:.02em;text-transform:uppercase;margin:0}
+h1 span{color:var(--accent)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font:600 .78rem/1 var(--f-body);letter-spacing:.04em;text-transform:uppercase;padding:5px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.chip.on{border-color:var(--go);color:var(--go)}
+.chip.bad{border-color:var(--warn);color:var(--warn)}
+.readout{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px 10px}
+.big{grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.big .v{font:700 4.2rem/0.9 var(--f-num);font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.cell .l,.big .l{font:600 .72rem/1 var(--f-body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.cell .v{font:600 2rem/1.05 var(--f-num);font-variant-numeric:tabular-nums;margin-top:4px}
+.cell .s{font-size:.78rem;color:var(--muted)}
+.v.fast{color:var(--warn)}
+.next{grid-column:1/-1;font-size:.85rem;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button{font:700 1.05rem/1 var(--f-body);border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:14px 12px;min-height:52px;cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.45;cursor:default}
+#btnStart{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+#btnTalk{grid-column:1/-1;min-height:92px;font-size:1.4rem;background:var(--ink);color:var(--bg);border-color:transparent;letter-spacing:.02em}
+#btnTalk.listening{background:var(--go);color:#fff}
+.typebar{grid-column:1/-1;display:flex;gap:8px}
+.typebar input{flex:1;min-width:0;font-size:17px;padding:14px 12px}
+.typebar button{flex:0 0 auto;min-width:84px}
+.quick{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.quick button{flex:1 1 auto;min-height:40px;padding:8px 10px;font-size:.9rem;font-weight:700}
+.tag{font:600 .9rem/1 var(--f-body);color:var(--muted);text-transform:none;letter-spacing:0}
+.targetrow{display:flex;flex-direction:column;gap:6px;font-size:.95rem;color:var(--ink);font-weight:700}
+.targetrow .hint{font-weight:400;color:var(--muted);font-size:.82rem}
+.status{font-size:.9rem;color:var(--muted);min-height:1.3em}
+section{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+h2{font:700 1.05rem/1.1 var(--f-num);text-transform:uppercase;letter-spacing:.08em;margin:0;color:var(--muted)}
+.log{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;font-size:.95rem}
+.log p{margin:0;padding:6px 10px;border-radius:10px;max-width:88%;overflow-wrap:anywhere}
+.log .bot{background:color-mix(in srgb,var(--accent) 14%,transparent);align-self:flex-start}
+.log .you{background:color-mix(in srgb,var(--ink) 8%,transparent);align-self:flex-end}
+.log .sys{color:var(--muted);font-size:.8rem;align-self:center;max-width:100%;text-align:center}
+.hist{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 14px;font-size:.9rem}
+.hist div b{display:block;font:600 1.35rem/1.1 var(--f-num);font-variant-numeric:tabular-nums}
+.hist div span{color:var(--muted);font-size:.78rem}
+.note{font-size:.85rem;color:var(--muted);margin:0}
+canvas{width:100%;height:220px;border-radius:10px;background:color-mix(in srgb,var(--route) 6%,var(--surface));border:1px solid var(--line)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row > *{flex:1 1 140px;min-width:0}
+label{font-size:.85rem;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+input,select{font:16px var(--f-body);padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+input[type=checkbox]{width:auto}
+.check{flex-direction:row;align-items:center;gap:8px;color:var(--ink)}
+details summary{cursor:pointer;font:700 1.05rem/1.1 var(--f-num);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);list-style:none}
+details summary::after{content:" +"} details[open] summary::after{content:" −"}
+details[open] summary{margin-bottom:10px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.connect{border:2px solid var(--accent)}
+.warnbox{border:1px solid var(--warn);color:var(--warn);border-radius:12px;padding:10px 12px;font-size:.9rem}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>run<span>Sakhi</span></h1>
+    <div class="chips"><span class="chip" id="chipGps">GPS</span><span class="chip" id="chipMic">Voice</span><span class="chip" id="chipHr">HR</span><span class="chip" id="chipAi">Claude</span></div>
+  </header>
+
+  <div id="compat" class="warnbox" hidden></div>
+
+  <section id="connect" class="connect">
+    <h2>Connect runSakhi</h2>
+    <p class="note">runSakhi needs a Claude API key to chat with you about anything, any time. It is saved only on this phone. Get one at console.anthropic.com, under API keys.</p>
+    <form id="connectForm" autocomplete="off" style="display:flex;flex-direction:column;gap:8px">
+      <input id="keyIn" type="password" placeholder="API key: sk-ant-..." aria-label="Claude API key">
+      <input id="wsIn" type="text" placeholder="Workspace ID: wrkspc_... (only if asked)" aria-label="Workspace ID">
+      <button type="submit">Connect</button></form>
+    <p class="note" id="connectMsg"></p>
+  </section>
+
+  <div class="readout" aria-live="off">
+    <div class="big"><div><div class="l">Elapsed</div><div class="v" id="vTime">0:00:00</div></div><div style="text-align:right"><div class="l">Feel</div><div class="v" id="vFeel" style="font-size:2.6rem">–</div></div></div>
+    <div class="cell"><div class="l">Distance</div><div class="v" id="vDist">0.00</div><div class="s">km · GPS</div></div>
+    <div class="cell"><div class="l">Avg pace</div><div class="v" id="vAvg">–:––</div><div class="s">/km</div></div>
+    <div class="cell"><div class="l">Now</div><div class="v" id="vNow">–:––</div><div class="s">/km · 2 min</div></div>
+    <div class="cell"><div class="l">Heart</div><div class="v" id="vHr">–</div><div class="s" id="vZone">bpm</div></div>
+    <div class="cell"><div class="l">To go</div><div class="v" id="vLeft">–</div><div class="s" id="vLeftS">km of target</div></div>
+    <div class="cell"><div class="l">Next turn</div><div class="v" id="vTurn">–</div><div class="s" id="vTurnS">no route</div></div>
+    <div class="next" id="vNext">Tap Start when you're at the start line.</div>
+  </div>
+
+  <label class="targetrow" for="target">Today's distance <span class="hint">km, optional. Leave empty for an open-ended run</span>
+    <input id="target" type="number" inputmode="decimal" min="1" max="300" step="0.5" placeholder="Open-ended"></label>
+  <div class="controls">
+    <button id="btnStart" type="button">Start run</button>
+    <button id="btnEnd" type="button" disabled>End run</button>
+    <button id="btnTalk" type="button">Tap to talk to runSakhi</button>
+    <form class="typebar" id="typeForm" autocomplete="off"><input id="chatIn" type="text" inputmode="text" enterkeyhint="send" placeholder="Or type: 12.4 km, 6:50, feel 7…" aria-label="Type a message to runSakhi"><button type="submit">Send</button></form>
+    <div class="quick" id="quick"><button type="button" data-q="weather">Weather</button><button type="button" data-q="news">News</button><button type="button" data-q="route">Route</button><button type="button" data-q="stats">Stats</button><button type="button" data-q="check in">Check in</button></div>
+  </div>
+  <div class="status" id="status" role="status"></div>
+
+  <section>
+    <h2>Conversation</h2>
+    <div class="log" id="log"><p class="sys">Talk or type to runSakhi any time, before, during or after a run. Tap Talk while she is speaking to cut in.</p></div>
+  </section>
+
+  <section>
+    <h2>Route</h2>
+    <div class="row">
+      <label>Follow a route<select id="selRoute"><option value="">No route · free run</option></select></label>
+      <label>Or load a GPX<input id="fileGpx" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml"></label>
+    </div>
+    <canvas id="map" width="1040" height="440" aria-label="Route map with your position"></canvas>
+    <p class="note" id="routeNote">Routes come from your Strava runs. Export any Strava route as GPX and load it here for new courses.</p>
+  </section>
+
+  <section>
+    <h2>What your Strava says</h2>
+    <div class="hist" id="hist"></div>
+    <p class="note" id="histNote"></p>
+  </section>
+
+  <section>
+    <h2>Check-ins</h2>
+    <div class="tablewrap"><table><thead><tr><th>Time</th><th>You said</th><th>Pace</th><th>GPS km</th><th>Feel</th><th>HR</th></tr></thead><tbody id="tbl"><tr><td colspan="6" class="note">Your answers will be logged here.</td></tr></tbody></table></div>
+    <button id="btnCopy" type="button">Copy run log as CSV</button>
+  </section>
+
+  <section>
+    <details>
+      <summary>Settings</summary>
+      <div class="row">
+        <label>Check in every (min)<input id="cfgCheck" type="number" min="3" max="60"></label>
+        <label>Weather or news every (min)<input id="cfgInfo" type="number" min="3" max="60"></label>
+      </div>
+      <div class="row">
+        <label>Between check-ins<select id="cfgInfoKind"><option value="mix">Weather and news</option><option value="weather">Weather only</option><option value="news">News only</option><option value="off">Nothing</option></select></label>
+        <label>News source<select id="cfgFeed"></select></label>
+      </div>
+      <div class="row">
+        <label>runSakhi's voice<select id="cfgVoice"></select></label>
+        <label>Speaking speed<input id="cfgRate" type="number" min="0.6" max="1.6" step="0.1"></label>
+        <label>Listening language<select id="cfgLang"><option value="en-IN">English (India)</option><option value="en-GB">English (UK)</option><option value="en-US">English (US)</option><option value="hi-IN">Hindi</option></select></label>
+      </div>
+      <div class="row">
+        <div style="display:flex;flex-direction:column;gap:6px"><span class="note" id="keyState">Claude: not connected</span><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="btnChangeKey" type="button">Change Claude key</button><button id="btnForgetKey" type="button">Forget key</button></div></div>
+        <label>Model<input id="cfgModel" type="text"></label>
+      </div>
+      <div class="row">
+        <button id="btnHr" type="button">Connect heart-rate strap</button>
+        <button id="btnTest" type="button">Test voice</button>
+      </div>
+      <p class="note">runSakhi chats through Claude using your key. If the signal drops mid-run she falls back to built-in coaching from your Strava baseline, and keeps tracking, calling turns and answering weather, route and stats. Keep this page open and in front; the screen stays awake while you run.</p>
+    </details>
+  </section>
+</div>
+
+<script>
+/* ---------- Data baked in from Strava (refresh by asking Claude to rebuild) ---------- */
+const ROUTES = [{"id": "r21", "name": "21k out-and-back", "date": "17 Oct 2026", "km": 21.0, "poly": "{cosBk~a|LWGot@gUi@MiBo@}Aa@]Ow@OaJsCy@QgAc@qCw@k@UuDcAIGcAWmBm@[GaA]kA[AGR@pAd@|A`@x@XhIbCmA]uA[kDgAuCs@eBu@eDcAUEaA_@wA_@wBy@}A]qBo@k@KgA_@{A_@k@UcBc@uAi@gAUc@SiBg@_Ae@y@Qe@SwA]qDqAyA_@sAe@eCo@sAe@_@IaA]a@Wk@Gk@QeDgAqDcAm@Su@]uBk@w@]iEmAUI@K|Ah@`@J\\PZBtAZbAf@bA\\hAf@pAVbGvBpAVh@TVDfBj@t@ZdDfAl@LjC~@`@FdA\\p@HtBh@bBv@lC|@^Jh@D`@HbAd@tBt@dBd@jGpBrAZhLrD^FdExAbD|@lCz@rCv@pErAx@X|Cz@rFbBr@VjF|AtBt@fl@tQhl@|_@t@n@t@h@b@b@ZPYMm@k@uk@aa@op@mS}@UyAi@aD_Ak@M{Bu@}Aa@cEwAgCs@u@YkBc@yAi@mD_Ac@SkIcCEEPBrEzA_ASiBo@w@[mA[_KeDyC{@wA[s@YoA]c@Qe@I{Ag@kCs@o@M}@g@yAa@_Ai@kAWw@KcCw@e@Uu@Qy@[mH}B{@UaBs@mAU{EoAcAa@}@UcBu@o@MDCD?ABa@I}@Yc@WiASoAc@dAXxARl@R^Tt@Z~Bv@jAVvB~@d@J`Bj@pARbAZlCdAXDxC~@f@H\\RxA\\d@R`ARhBx@nCj@n@X`@JVNzAj@j@N`AJn@\\x@TfBr@zA\\nAb@jElAbElAj@VZH|@\\pHtB|Bz@|@PxEvArEzA^HZLfATrAf@xBh@jDdA~HbCRJxDfA", "gaps": [1, 114, 115, 122, 123]}, {"id": "r25", "name": "25k hill loop", "date": "4 Oct 2026", "km": 25.3, "poly": "ooitBgww{LbAyR?gB^yHBuASqA{EgNyBkF{@iCKiCuAuD?q@HYl@s@~B_A|GiDdF_CfHmC~EwB`LmFvFwBhBa@pEc@t@OlIq@t@Q\\UnBeDv@oBIkGD}@`AsF^qC~AiH@k@SaCJ{BPuAZ_AzAiBRcEvA_G@Ua@s@Uy@@e@zAiBT?r@f@v@LnFoAjAMr@UZQNU?[Qe@[OmA?bAM\\FR\\Jt@K\\o@`@uBXgA`@sCh@{@C{@k@YEYP_ArACZH^j@dAD\\aBtGIbDOZsA|Aa@`BQbDLnDeA|E}BbND~HaCnF_@j@u@^}@LgGb@uH|@qBd@uCbAuClA{NzGkNvFcOjHq@n@I^?`@tA~DHxBHb@zGnQlB~FRhAExCq@fOM`FSfCQ~Al@mNd@aJNeFAk@QsA}EmNmDcJQiACqAsA}DJ}@j@q@j@_@vGwC`Ak@zG_D`KaEhGoCnG{CtFqBjCi@dQ_B~@e@~@cB|AyDIqHRwAnBgL`A_E@q@Q_BRcEXsAjBgCJsDzAgGG_@Ye@Qm@Co@jA{ARO\\B~@h@p@DpB[~Bq@nAOfAk@FYGa@IWMMuABGGfAEf@NTl@A^KZa@Tq@RcAHkCt@mBZy@Kq@i@QC_BlB@l@l@jADb@aBvGC`DKVwA~Ag@jBOvDP`BAp@aAhEuBvLOdBHjFCl@g@vAoAlCa@n@QN_AZiHj@}Ep@sBNw@PaCx@_G`C}A|@}GrCwAt@cJjDiR`Jm@b@[`@Ib@@ZtAzDFfBTdA`ChGvFfPRnA@dCs@zNIvD[fF?~A", "gaps": [111]}, {"id": "r16", "name": "16k route", "date": "24 Oct 2026", "km": 16.0, "poly": "{q_tBgjj|L^TvBf@jAJt@Nr@@p@Jn@PjCbA\\Vz@d@h@P~@j@p@Zv@j@rDpBlAj@j@f@dAd@RPj@Z`@LtB|Ah@\\t@Z~@x@pAv@z@l@h@XRR\\NF?JILGNi@XSlh@rZfBjAhB`ANPDHZZdAb@bB|@nAx@f@VfDrBnEbCfAr@~CbBp@X`CrAh@T~@j@nB`AVHb@XVHNNd@XlAl@bB`AhBx@zCdBzBdAbAl@pGdD|A|@tBbAjIpE~H~DrC|ApD`BbB~@pAz@jAf@DJiAi@yA{@mDgB}A_AgFkCq@c@w@[wDuBoDgBw@e@qKsFaDiBUKSCwAu@}GqDqDiBoBgAiG_D_B}@_Ac@QOmAi@c@Ya@Qa@[aBcAcCqAo@c@{@c@gF}CqBiAOKSKm@g@kBcAw@k@qAs@ag@uYG?INSrASdSm@nASl@m@nAGDe@?[McCwCq@gA_@}@MoAISk@Ss@eAu@WYGCODGJ?n@NFNXBf@Zv@rAJ^Dp@FLNTXTt@pA|@jAdAjAJDFAvA}CNuTOMs@c@WIyAmA_Ai@uAcAgBaAe@_@o@WSGyAeAWKOQB?C?LDJ?~@Xx@x@^Fj@V|@~@TN`A\\jAfAhAh@z@|@p@`@t@XBfTi@xAMNs@`BMDQAUIOMe@i@c@a@SUOY][{@_BSk@SYOa@IKSOGWH?PHVRPXPf@LNN`@h@t@\\n@r@p@nA~ALLJ?Vq@FCLSD?FEN]z@yUD[J_@Vm@FAH@", "gaps": [35, 114, 118, 153, 183, 222]}];
+const HISTORY = {
+  updated: "24 Oct 2026",
+  easyLongPace: 415,          // sec/km, typical flat long run (6:55)
+  easyRange: [395, 435],
+  tempo5k: 344,               // 5k on 10 Oct, 5:44/km
+  best10k: "1:05",
+  hrZones: [108, 134, 148, 161], // upper bounds Z1..Z4, Z5 above (Strava, age-based max HR)
+  paceZones: [478, 411, 369, 346, 325], // sec/km boundaries Z1/Z2 .. Z5/Z6
+  weeklyKm: [11.1, 43.8, 45.0, 37.0],   // weeks ending 3, 10, 17, 24 Oct
+  longRuns: [
+    {d:"24 Oct", km:16.0, pace:416, note:"first 5k 6:32, last 5k near 5:55, HR 150–170"},
+    {d:"17 Oct", km:21.0, pace:417, note:"HR 135 at start, Z5 after km 15, finished at 176"},
+    {d:"4 Oct",  km:25.3, pace:387, note:"hill loop, 300 m climb, HR 165–175 most of the way"},
+    {d:"20 Sep", km:15.3, pace:445, note:"Thane, 283 m climb"},
+    {d:"6 Sep",  km:21.4, pace:397, note:"Satara, 445 m climb"}
+  ],
+  bigDays: "Comrades 86.7 km on 14 Jun in 11:07 moving (7:41/km); 50 km on 17 May at 7:40/km",
+  stopEveryKm: 4.5,           // you typically stop for water about every 4–5 km
+  ref21kElapsed: 8989         // 21 km on 17 Oct, elapsed seconds
+};
+const FEEDS = {
+  bs:   {name:"Business Standard Markets", url:"https://www.business-standard.com/rss/markets-106.rss"},
+  toi:  {name:"Times of India", url:"https://timesofindia.indiatimes.com/rssfeedstopstories.cms"},
+  hindu:{name:"The Hindu", url:"https://www.thehindu.com/news/national/feeder/default.rss"},
+  bbc:  {name:"BBC World", url:"https://feeds.bbci.co.uk/news/world/rss.xml"},
+  hn:   {name:"Hacker News", url:""}
+};
+const DEFAULTS = {ws:"",target:null,targetV:2, checkMin:10, infoMin:7, info:"mix", feed:"bs", voice:"", rate:1.0, lang:"en-IN", key:"", model:"claude-haiku-5-5", route:"", lat:19.076, lon:72.8777};
+
+/* ---------- Helpers ---------- */
+const $ = s => document.querySelector(s);
+const store = {get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const cfg = Object.assign({}, DEFAULTS, store.get("lrc_cfg") || {});
+if(cfg.targetV!==2){cfg.target=null;cfg.targetV=2;}
+const saveCfg = () => store.set("lrc_cfg", cfg);
+const hasTarget = () => +cfg.target > 0;
+// how far into the run we are, 0..1: by target if set, else by time (90 min counts as "late")
+const runFrac = () => hasTarget() ? S.dist/1000/cfg.target : elapsed()/(90*60000);
+function setTarget(v){const n=parseFloat(v);cfg.target=n>0?Math.min(n,300):null;saveCfg();const i=$("#target");if(i&&document.activeElement!==i)i.value=cfg.target??"";S.cool.half=undefined;S.cool.done=undefined;}
+const toRad = d => d*Math.PI/180, toDeg = r => r*180/Math.PI;
+function hav(a1,o1,a2,o2){const R=6371000,dA=toRad(a2-a1),dO=toRad(o2-o1);const h=Math.sin(dA/2)**2+Math.cos(toRad(a1))*Math.cos(toRad(a2))*Math.sin(dO/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
+function bearing(a1,o1,a2,o2){const y=Math.sin(toRad(o2-o1))*Math.cos(toRad(a2));const x=Math.cos(toRad(a1))*Math.sin(toRad(a2))-Math.sin(toRad(a1))*Math.cos(toRad(a2))*Math.cos(toRad(o2-o1));return (toDeg(Math.atan2(y,x))+360)%360;}
+const angDiff = (a,b) => ((b-a+540)%360)-180;
+function fmtPace(s){if(!s||!isFinite(s)||s<120||s>1500)return "–:––";s=Math.round(s);return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");}
+function sayPace(s){s=Math.round(s);const m=Math.floor(s/60),x=s%60;return x?`${m} ${String(x).padStart(2,"0")} a kilometre`:`${m} minutes a kilometre`;}
+function fmtTime(ms){const t=Math.floor(ms/1000);return Math.floor(t/3600)+":"+String(Math.floor(t/60)%60).padStart(2,"0")+":"+String(t%60).padStart(2,"0");}
+function sayTime(ms){const m=Math.round(ms/60000),h=Math.floor(m/60),mm=m%60;return h?`${h} hour${h>1?"s":""}${mm?` ${mm} minute${mm>1?"s":""}`:""}`:`${mm} minute${mm===1?"":"s"}`;}
+const km1 = m => (m/1000).toFixed(1);
+function decodePoly(s){let i=0,la=0,lo=0;const out=[];while(i<s.length){for(let k=0;k<2;k++){let r=0,sh=0,b;do{b=s.charCodeAt(i++)-63;r|=(b&31)<<sh;sh+=5;}while(b>=32);const d=(r&1)?~(r>>1):(r>>1);if(k===0)la+=d;else lo+=d;}out.push([la/1e5,lo/1e5]);}return out;}
+function zoneOf(hr){const z=HISTORY.hrZones;for(let i=0;i<z.length;i++)if(hr<=z[i])return i+1;return 5;}
+
+/* ---------- State ---------- */
+const S = {running:false,paused:false,t0:0,accum:0,pts:[],dist:0,lastFix:null,heading:null,checkins:[],
+  nextCheck:0,nextInfo:0,infoTurn:0,busy:false,weather:null,wTime:0,news:[],newsIdx:0,newsTime:0,
+  hr:null,hrT:0,watchId:null,wake:null,lat:null,lon:null,chat:[],cool:{},route:null,
+  lastSplitKm:0,splitT:0,lastFeel:null,offCount:0,alerts:[]};
+const elapsed = () => S.running ? S.accum + (S.paused ? 0 : Date.now()-S.t0) : S.accum;
+
+/* ---------- Log + status ---------- */
+function log(kind,text){const p=document.createElement("p");p.className=kind;p.textContent=text;const L=$("#log");L.appendChild(p);while(L.children.length>60)L.removeChild(L.firstChild);L.scrollTop=L.scrollHeight;}
+const status = t => $("#status").textContent = t || "";
+
+/* ---------- Voice out ---------- */
+let voices=[];
+const FEMALE=/female|woman|zira|samantha|veena|heera|kalpana|lekha|swara|neerja|aditi|raveena|priya|karen|serena|moira|tessa|susan|victoria|fiona|kate|hazel|libby|sonia|catherine|natasha|allison|ava|joanna|kendra|salli|en-in-x-ahp|en-in-x-cxx|en-in-x-ena|en-gb-x-gba|en-gb-x-fis|en-us-x-sfg|en-us-x-tpc|en-us-x-iob/i;
+const isFemale = v => !!v && FEMALE.test(v.name+" "+v.voiceURI);
+function loadVoices(){
+  if(!("speechSynthesis" in window))return;
+  voices=speechSynthesis.getVoices().filter(v=>/^en|^hi/i.test(v.lang));
+  const sel=$("#cfgVoice");sel.innerHTML="";const o=document.createElement("option");o.value="";o.textContent="Phone default";sel.appendChild(o);
+  voices.sort((a,b)=>isFemale(b)-isFemale(a)||(/IN/i.test(b.lang))-(/IN/i.test(a.lang)));
+  voices.forEach(v=>{const x=document.createElement("option");x.value=v.voiceURI;x.textContent=`${v.name} (${v.lang})${isFemale(v)?" · female":""}`;sel.appendChild(x);});
+  if(!cfg.voice||!voices.find(v=>v.voiceURI===cfg.voice)){const f=voices.find(v=>isFemale(v)&&/IN/i.test(v.lang))||voices.find(isFemale);if(f){cfg.voice=f.voiceURI;saveCfg();}}
+  sel.value=cfg.voice;
+}
+function speak(text){
+  log("bot",text);
+  return new Promise(res=>{
+    if(!("speechSynthesis" in window))return res();
+    const u=new SpeechSynthesisUtterance(text);const v=voices.find(v=>v.voiceURI===cfg.voice);
+    if(v)u.voice=v;u.lang=v?v.lang:"en-IN";u.rate=+cfg.rate||1;u.pitch=isFemale(v)?1.05:1.25;
+    let done=false;const fin=()=>{if(done)return;done=true;clearTimeout(to);res();};
+    u.onend=fin;u.onerror=fin;const to=setTimeout(fin,3000+text.length*110);
+    status("Speaking…");speechSynthesis.speak(u);
+  }).then(()=>status(""));
+}
+
+/* ---------- Voice in ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let pending=null;
+const typing = () => document.activeElement===$("#chatIn") || $("#chatIn").value.trim()!=="";
+function listen(ms=8000){
+  return new Promise(res=>{
+    let out="",done=false,r=null,to=null;
+    const fin=typed=>{if(done)return;done=true;clearTimeout(to);if(r){try{r.abort()}catch(e){}}pending=null;
+      $("#btnTalk").classList.remove("listening");status("");if(typed!=null)out=typed;if(out)log("you",out);res(out);};
+    pending={fin,extend(){clearTimeout(to);to=setTimeout(()=>fin(),30000);}};
+    $("#btnTalk").classList.add("listening");status(SR?"Listening… or type below":"Type your answer below");
+    to=setTimeout(()=>fin(),SR?ms:30000);
+    if(typing())pending.extend();
+    if(SR){r=new SR();r.lang=cfg.lang;r.interimResults=false;r.maxAlternatives=1;
+      r.onresult=e=>{out=Array.from(e.results).map(x=>x[0].transcript).join(" ").trim();if(out)fin();};
+      r.onerror=()=>{};r.onend=()=>{if(!done&&!typing())fin();};
+      try{r.start()}catch(e){}}
+  });
+}
+/* ---------- Parsing what you say ---------- */
+const NUMW={zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50};
+function normalise(t){
+  t=" "+t.toLowerCase().replace(/[,]/g," ")+" ";
+  t=t.replace(/\b(twenty|thirty|forty|fifty)[ -](one|two|three|four|five|six|seven|eight|nine)\b/g,(m,a,b)=>NUMW[a]+NUMW[b]);
+  t=t.replace(/\b(zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty)\b/g,m=>NUMW[m]);
+  t=t.replace(/(\d)\s*point\s*(\d)/g,"$1.$2").replace(/\bhalf\b/g,".5");
+  return t.replace(/\s+/g," ");
+}
+function parseRun(raw){
+  const t=normalise(raw);let dist=null,pace=null;
+  let m=t.match(/(\d+(?:\.\d+)?)\s*(?:k\b|km|kms|k's|kilomet)/) || t.match(/distance\s*(?:is\s*|of\s*)?(\d+(?:\.\d+)?)/) || t.match(/(?:done|covered|ran)\s*(\d+(?:\.\d+)?)/);
+  if(m)dist=parseFloat(m[1]);
+  let rest=m?t.replace(m[0]," "):t;const pi=rest.search(/pace|per k|per kilo|a kilo|a k\b/);
+  const seg=rest;
+  let p=seg.match(/(\d{1,2})\s*(?::|\.|minutes?|mins?|min)\s*(\d{1,2})/) || seg.match(/(\d{1,2})\s+(\d{2})\b/) || (pi>=0?seg.match(/(\d{1,2})\s*(?:minutes?|mins?)?/):null);
+  if(p){const mm=+p[1],ss=p[2]?+p[2]:0;if(mm>=3&&mm<=15&&ss<60)pace=mm*60+ss;}
+  return {dist,pace};
+}
+function parseFeel(raw){
+  const t=normalise(raw);const m=t.match(/\b(10|[1-9])\b/);if(m)return +m[1];
+  if(/great|awesome|strong|fresh|flying|excellent/.test(t))return 8;
+  if(/good|nice|comfortable/.test(t))return 7;
+  if(/okay|ok\b|fine|alright|decent/.test(t))return 6;
+  if(/tired|heavy|hot|sore/.test(t))return 4;
+  if(/bad|terrible|struggling|dead|cramp|dizzy|done/.test(t))return 3;
+  return null;
+}
+
+/* ---------- GPS ---------- */
+function startGps(){
+  if(!("geolocation" in navigator)){chip("#chipGps","bad");return;}
+  S.watchId=navigator.geolocation.watchPosition(onPos,e=>{chip("#chipGps","bad");log("sys","GPS error: "+e.message);},{enableHighAccuracy:true,maximumAge:1000,timeout:20000});
+}
+function onPos(p){
+  const {latitude:la,longitude:lo,accuracy:acc}=p.coords;S.lat=la;S.lon=lo;chip("#chipGps",acc<=30?"on":"");
+  if(!S.running||S.paused||acc>35)return;
+  const t=Date.now(),last=S.lastFix;
+  if(last){const d=hav(last.la,last.lo,la,lo),dt=(t-last.t)/1000;if(d<4)return;if(d/dt>7.5)return;
+    S.dist+=d;if(d>=8)S.heading=bearing(last.la,last.lo,la,lo);}
+  S.lastFix={la,lo,t};S.pts.push({la,lo,t,d:S.dist});if(S.pts.length>4000)S.pts.splice(0,1000);
+  routeUpdate(la,lo);
+}
+function nowPace(){const t=Date.now(),pts=S.pts;if(pts.length<3)return null;const last=pts[pts.length-1];let first=null;for(const p of pts){if(p.t>=t-120000){first=p;break;}}if(!first||first===last)return null;const dd=last.d-first.d,dt=(last.t-first.t)/1000;return dd>60?dt/(dd/1000):null;}
+function avgPace(){return S.dist>200?(elapsed()/1000)/(S.dist/1000):null;}
+
+/* ---------- Heart rate strap (Web Bluetooth) ---------- */
+async function connectHr(){
+  if(!navigator.bluetooth){log("sys","This browser can't connect Bluetooth sensors. Chrome on Android can.");return;}
+  try{
+    const dev=await navigator.bluetooth.requestDevice({filters:[{services:["heart_rate"]}]});
+    const srv=await dev.gatt.connect();const ch=await (await srv.getPrimaryService("heart_rate")).getCharacteristic("heart_rate_measurement");
+    await ch.startNotifications();
+    ch.addEventListener("characteristicvaluechanged",e=>{const v=e.target.value;S.hr=(v.getUint8(0)&1)?v.getUint16(1,true):v.getUint8(1);S.hrT=Date.now();});
+    dev.addEventListener("gattserverdisconnected",()=>{S.hr=null;chip("#chipHr","bad");log("sys","Heart-rate strap disconnected.");});
+    chip("#chipHr","on");log("sys","Heart-rate connected: "+(dev.name||"sensor"));
+  }catch(e){log("sys","Heart-rate not connected: "+e.message);}
+}
+const liveHr = () => (S.hr && Date.now()-S.hrT<10000) ? S.hr : null;
+
+/* ---------- Route guidance ---------- */
+function buildRoute(name,pts,km,gaps){
+  const cum=[0];for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+hav(pts[i-1][0],pts[i-1][1],pts[i][0],pts[i][1]));
+  const total=cum[cum.length-1];
+  const gapSet=new Set(gaps||[]);const gap=pts.map((p,i)=>gapSet.has(i)); // segments crossing the privacy zone near home
+  const at=d=>{d=Math.max(0,Math.min(total,d));let i=1;while(i<cum.length-1&&cum[i]<d)i++;const f=(d-cum[i-1])/((cum[i]-cum[i-1])||1);return [pts[i-1][0]+(pts[i][0]-pts[i-1][0])*f,pts[i-1][1]+(pts[i][1]-pts[i-1][1])*f];};
+  const raw=[];
+  for(let i=1;i<pts.length-1;i++){const d=cum[i];if(d<60||total-d<60||gap[i]||gap[i-1])continue;const a=at(d-50),b=at(d+50);
+    const bin=bearing(a[0],a[1],pts[i][0],pts[i][1]),bout=bearing(pts[i][0],pts[i][1],b[0],b[1]);const dif=angDiff(bin,bout);
+    if(Math.abs(dif)>=45)raw.push({at:d,dif});}
+  const turns=[];for(const t of raw){const l=turns[turns.length-1];if(l&&t.at-l.at<70){if(Math.abs(t.dif)>Math.abs(l.dif))turns[turns.length-1]=t;}else turns.push(t);}
+  turns.forEach(t=>{const a=Math.abs(t.dif);t.dir=a>=145?"turnaround":(a<70?"slight ":"")+(t.dif>0?"right":"left");t.said200=false;t.saidNow=false;});
+  return {name,pts,cum,total,turns,gap,gapList:gaps,km:km||total/1000,idx:0,along:0,off:0,lastOffSay:0,finishedSaid:false};
+}
+function segProj(p,a,b){ // equirectangular projection in metres
+  const k=Math.cos(toRad(a[0]))*111320,K=110540;const ax=0,ay=0,bx=(b[1]-a[1])*k,by=(b[0]-a[0])*K,px=(p[1]-a[1])*k,py=(p[0]-a[0])*K;
+  const L=bx*bx+by*by;let t=L?((px*bx+py*by)/L):0;t=Math.max(0,Math.min(1,t));const dx=px-bx*t,dy=py-by*t;return {d:Math.hypot(dx,dy),t};
+}
+function routeUpdate(la,lo){
+  const R=S.route;if(!R)return;const p=[la,lo];
+  let best={d:1e9,i:R.idx,t:0};const limit=R.cum[R.idx]+1500;
+  for(let i=Math.max(0,R.idx-3);i<R.pts.length-1&&R.cum[i]<=limit;i++){const s=segProj(p,R.pts[i],R.pts[i+1]);if(s.d<best.d)best={d:s.d,i,t:s.t};}
+  if(best.d>250){ // lost: search whole route once
+    for(let i=0;i<R.pts.length-1;i++){const s=segProj(p,R.pts[i],R.pts[i+1]);if(s.d<best.d)best={d:s.d,i,t:s.t};}
+  }
+  R.off=best.d;
+  const inZone=R.gap&&R.gap[best.i];
+  if(best.d<=60||(inZone&&best.d<=600)){R.idx=best.i;R.along=R.cum[best.i]+(R.cum[best.i+1]-R.cum[best.i])*best.t;S.offCount=0;}
+  else S.offCount++;
+  if(!inZone&&S.offCount>=3&&Date.now()-R.lastOffSay>45000){
+    R.lastOffSay=Date.now();const tgt=R.pts[Math.min(best.i+1,R.pts.length-1)];
+    let where="";if(S.heading!=null){const rel=angDiff(S.heading,bearing(la,lo,tgt[0],tgt[1]));where=Math.abs(rel)<35?" ahead of you":Math.abs(rel)>145?" behind you":rel>0?" to your right":" to your left";}
+    S.alerts.push(`You're off the route by about ${Math.round(best.d/10)*10} metres. The route is${where}.`);
+  }
+  const next=R.turns.find(t=>t.at>R.along+10);
+  if(next&&best.d<=60){const dTo=next.at-R.along;const phrase=next.dir==="turnaround"?"turn around":"turn "+next.dir;
+    if(dTo<=260&&dTo>110&&!next.said200){next.said200=true;S.alerts.push(`In ${Math.round(dTo/50)*50} metres, ${phrase}.`);}
+    if(dTo<=35&&!next.saidNow){next.saidNow=true;next.said200=true;S.alerts.push(next.dir==="turnaround"?"Turnaround point. Head back the way you came.":`${phrase[0].toUpperCase()+phrase.slice(1)} now.`);}
+  }
+  if(!R.finishedSaid&&R.total-R.along<80&&R.along>R.total*0.8){R.finishedSaid=true;S.alerts.push("That's the end of the route. Nicely done.");}
+}
+function routeLine(){
+  const R=S.route;if(!R)return "You're not following a route right now.";
+  const left=Math.max(0,R.total-R.along),next=R.turns.find(t=>t.at>R.along+10);
+  let s=`${km1(R.along)} kilometres done on the ${R.name}, ${km1(left)} to go.`;
+  if(next)s+=` Next: ${next.dir==="turnaround"?"turnaround":next.dir+" turn"} in ${next.at-R.along>1000?km1(next.at-R.along)+" kilometres":Math.round((next.at-R.along)/50)*50+" metres"}.`;
+  if(R.off>60)s+=` You're about ${Math.round(R.off)} metres off the line.`;
+  return s;
+}
+function drawMap(){
+  const c=$("#map"),g=c.getContext("2d"),W=c.width,H=c.height,cs=getComputedStyle(document.documentElement);
+  g.clearRect(0,0,W,H);const R=S.route;
+  const pts=R?R.pts:(S.pts.length?S.pts.map(p=>[p.la,p.lo]):null);
+  if(!pts||pts.length<2){g.fillStyle=cs.getPropertyValue("--muted");g.font="28px "+cs.getPropertyValue("--f-body");g.textAlign="center";g.fillText(R?"":"Pick a route, or your track appears here once you start",W/2,H/2);return;}
+  let mnA=1e9,mxA=-1e9,mnO=1e9,mxO=-1e9;const all=pts.concat(S.lat!=null?[[S.lat,S.lon]]:[]);
+  all.forEach(([a,o])=>{mnA=Math.min(mnA,a);mxA=Math.max(mxA,a);mnO=Math.min(mnO,o);mxO=Math.max(mxO,o);});
+  const k=Math.cos(toRad((mnA+mxA)/2)),pad=30,sx=(W-2*pad)/(((mxO-mnO)*k)||1e-6),sy=(H-2*pad)/((mxA-mnA)||1e-6),s=Math.min(sx,sy);
+  const ox=(W-(mxO-mnO)*k*s)/2,oy=(H-(mxA-mnA)*s)/2;const X=o=>ox+(o-mnO)*k*s,Y=a=>H-oy-(a-mnA)*s;
+  g.lineJoin="round";g.lineCap="round";
+  g.strokeStyle=cs.getPropertyValue("--route");g.lineWidth=6;g.globalAlpha=R?0.45:1;g.beginPath();pts.forEach(([a,o],i)=>(i&&!(R&&R.gap[i-1]))?g.lineTo(X(o),Y(a)):g.moveTo(X(o),Y(a)));g.stroke();g.globalAlpha=1;
+  if(R&&R.along>0){g.strokeStyle=cs.getPropertyValue("--accent");g.lineWidth=8;g.beginPath();let first=true;for(let i=0;i<R.pts.length&&R.cum[i]<=R.along;i++){const[a,o]=R.pts[i];first?g.moveTo(X(o),Y(a)):g.lineTo(X(o),Y(a));first=false;}g.stroke();}
+  if(R){g.fillStyle=cs.getPropertyValue("--go");const[a0,o0]=R.pts[0];g.beginPath();g.arc(X(o0),Y(a0),9,0,7);g.fill();}
+  if(S.lat!=null){g.fillStyle=cs.getPropertyValue("--ink");g.beginPath();g.arc(X(S.lon),Y(S.lat),12,0,7);g.fill();g.fillStyle=cs.getPropertyValue("--accent");g.beginPath();g.arc(X(S.lon),Y(S.lat),7,0,7);g.fill();}
+}
+function setRoute(r){S.route=r;if(r){
+  $("#routeNote").textContent=`${r.name}: ${km1(r.total)} km with ${r.turns.length} turns I'll call out ahead of time.`;} else $("#routeNote").textContent="Free run. I'll still track distance and pace.";drawMap();}
+function parseGpx(text){const doc=new DOMParser().parseFromString(text,"application/xml");let nodes=[...doc.getElementsByTagName("trkpt")];if(!nodes.length)nodes=[...doc.getElementsByTagName("rtept")];
+  const pts=nodes.map(n=>[+n.getAttribute("lat"),+n.getAttribute("lon")]).filter(p=>isFinite(p[0])&&isFinite(p[1]));
+  const thin=[pts[0]];for(const p of pts){const l=thin[thin.length-1];if(hav(l[0],l[1],p[0],p[1])>=15)thin.push(p);}
+  const nm=(doc.getElementsByTagName("name")[0]||{}).textContent;return {pts:thin,name:(nm||"GPX route").trim().slice(0,40)};}
+
+/* ---------- Weather (Open-Meteo, no key) ---------- */
+const WMO={0:"clear skies",1:"mostly clear",2:"partly cloudy",3:"overcast",45:"fog",48:"fog",51:"light drizzle",53:"drizzle",55:"heavy drizzle",61:"light rain",63:"rain",65:"heavy rain",80:"rain showers",81:"heavy showers",82:"violent showers",95:"a thunderstorm",96:"thunderstorm with hail",99:"thunderstorm with hail"};
+async function getWeather(){
+  if(S.weather&&Date.now()-S.wTime<15*60000)return S.weather;
+  const la=S.lat??cfg.lat,lo=S.lon??cfg.lon;
+  const url=`https://api.open-meteo.com/v1/forecast?latitude=${la.toFixed(3)}&longitude=${lo.toFixed(3)}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,uv_index&hourly=precipitation_probability,temperature_2m&forecast_hours=3&timezone=auto`;
+  const j=await (await fetch(url)).json();S.weather=j;S.wTime=Date.now();return j;
+}
+async function weatherLine(){
+  try{const w=await getWeather(),c=w.current,h=w.hourly;
+    let s=`It's ${Math.round(c.temperature_2m)} degrees, feels like ${Math.round(c.apparent_temperature)}, humidity ${c.relative_humidity_2m} percent, ${WMO[c.weather_code]||"mixed skies"}.`;
+    if(c.wind_speed_10m>=12)s+=` Wind ${Math.round(c.wind_speed_10m)} kilometres an hour.`;
+    const rain=Math.max(...(h.precipitation_probability||[0]).slice(0,2));if(rain>=30)s+=` ${rain} percent chance of rain in the next hour.`;
+    const t2=(h.temperature_2m||[])[2];if(t2!=null&&t2-c.temperature_2m>=1.5)s+=` It'll be ${Math.round(t2)} in two hours, so it's warming up.`;
+    if(c.uv_index>=6)s+=` UV is ${Math.round(c.uv_index)}, stay on the shady side.`;
+    if(c.apparent_temperature>=32)s+=` In this heat expect to lose 10 to 20 seconds a kilometre. Sip every 15 minutes and take salt.`;
+    return s;
+  }catch(e){return "I couldn't reach the weather service just now.";}
+}
+
+/* ---------- News ---------- */
+const strip = h => (h||"").replace(/<[^>]*>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&#39;|&rsquo;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g," ").trim();
+async function getNews(){
+  if(S.news.length&&Date.now()-S.newsTime<30*60000)return;
+  let items=[];const f=FEEDS[cfg.feed]||FEEDS.bs;
+  if(f.url){try{const j=await (await fetch("https://api.rss2json.com/v1/api.json?rss_url="+encodeURIComponent(f.url))).json();
+    if(j.status==="ok")items=j.items.map(i=>({t:strip(i.title),d:strip(i.description),src:f.name}));}catch(e){}}
+  if(!items.length){try{const j=await (await fetch("https://hn.algolia.com/api/v1/search?tags=front_page")).json();items=j.hits.map(h=>({t:h.title,d:"",src:"Hacker News"}));}catch(e){}}
+  S.news=items.filter(i=>i.t);S.newsIdx=0;S.newsTime=Date.now();
+}
+async function newsLine(){
+  await getNews();if(!S.news.length)return "I couldn't reach the news feed.";
+  const it=S.news[S.newsIdx++%S.news.length];let s=`From ${it.src}: ${it.t}.`;
+  if(it.d&&it.d.length<200&&it.d.toLowerCase()!==it.t.toLowerCase())s+=" "+it.d;
+  return s;
+}
+
+/* ---------- Claude (optional) ---------- */
+const SYS = `You are runSakhi, a warm, upbeat female running companion (sakhi means friend) talking into the earphones of Pravin, an experienced ultramarathoner in Mumbai, during a long run. Everything you write is read aloud by text-to-speech, so reply in one to three short sentences, plain words, no lists, no markdown, no emoji. Be warm but direct like a good coach. Use his Strava baseline to judge pace and effort. Use kilometres and minutes per kilometre. If he reports dizziness, chest pain or confusion, tell him to stop, walk and get help. When he is not running, you can talk longer (up to five sentences) but still plain spoken words.`;
+function context(){
+  const R=S.route,w=S.weather&&S.weather.current,hr=liveHr();
+  if(!S.running&&elapsed()===0)return [`He is not running right now; chat normally (training, races, recovery, news, anything).`,
+    `Strava baseline: typical flat long-run pace ${fmtPace(HISTORY.easyLongPace)}/km; recent long runs ${HISTORY.longRuns.map(r=>`${r.d} ${r.km} km at ${fmtPace(r.pace)} (${r.note})`).join("; ")}. Weekly km last 4 weeks ${HISTORY.weeklyKm.join(", ")}. ${HISTORY.bigDays}.`,
+    S.weather?`Weather now: ${S.weather.current.temperature_2m}C, feels ${S.weather.current.apparent_temperature}C.`:""].filter(Boolean).join("\n");
+  return [
+    `${S.running?(S.paused?"Run paused. ":"Currently running. "):"Run finished. "}Elapsed ${sayTime(elapsed())}; GPS distance ${km1(S.dist)} km; average pace ${fmtPace(avgPace())}; last 2 min ${fmtPace(nowPace())}; ${hasTarget()?`target ${cfg.target} km`:"no set distance, open-ended run"}.`,
+    hr?`Heart rate ${hr} bpm (zone ${zoneOf(hr)}; Strava zones Z2 to ${HISTORY.hrZones[1]}, Z3 to ${HISTORY.hrZones[2]}, Z4 to ${HISTORY.hrZones[3]}).`:"No heart-rate sensor.",
+    R?`Following route "${R.name}": ${km1(R.along)} of ${km1(R.total)} km done.`:"No route.",
+    w?`Weather: ${w.temperature_2m}C, feels ${w.apparent_temperature}C, humidity ${w.relative_humidity_2m}%.`:"",
+    `Check-ins so far: ${S.checkins.map(c=>`${c.time} said "${c.said}", feel ${c.feel??"?"}`).join("; ")||"none"}.`,
+    `Strava baseline: typical flat long-run pace ${fmtPace(HISTORY.easyLongPace)}/km; recent long runs ${HISTORY.longRuns.map(r=>`${r.d} ${r.km} km at ${fmtPace(r.pace)} (${r.note})`).join("; ")}. Weekly km last 4 weeks ${HISTORY.weeklyKm.join(", ")}. ${HISTORY.bigDays}. Pattern: heart rate drifts about 20 to 40 bpm over a long run and reaches zone 5 late; he usually stops for water every 4 to 5 km.`,
+    S.news.length?`Headlines available: ${S.news.slice(0,5).map(n=>n.t).join(" | ")}`:""
+  ].filter(Boolean).join("\n");
+}
+S.chat=(store.get("lrc_chat")||[]).slice(-16);
+const MODELS=["claude-haiku-5-5","claude-sonnet-5-5","claude-haiku-4-5","claude-sonnet-4-5"];
+function explain(status,msg){
+  const m=(msg||"").toLowerCase();
+  if(status===0)return {kind:"net",text:location.protocol==="file:"?"The page is open as a file on the phone. Open it from its https link (Netlify) instead; browsers block it otherwise.":"Couldn't reach Claude. Check the internet connection and try again."};
+  if(/workspace/.test(m))return {kind:"key",text:"Your key covers all workspaces, so Claude needs to know which one to use. Paste your workspace ID in the second box (Console → Settings → Workspaces, ID column, starts with wrkspc_), or create a new key limited to one workspace and use that instead. Claude said: "+msg};
+  if(status===401||/invalid x-api-key|authentication/.test(m))return {kind:"key",text:"The key was rejected. Copy it again from console.anthropic.com (it starts with sk-ant-api) and paste it with no spaces. A Claude.ai chat subscription doesn't come with an API key; it's created separately in the Console."};
+  if(/credit balance|billing|purchase credits/.test(m))return {kind:"key",text:"The key is fine but the API account has no credits. Add credits in console.anthropic.com under Billing (a Claude.ai subscription doesn't cover API use), then tap Connect again."};
+  if(status===403)return {kind:"key",text:"This key isn't allowed to make requests. Check the key's workspace permissions in the Console. Claude said: "+msg};
+  if(status===404||/model/.test(m))return {kind:"model",text:"Model not available: "+msg};
+  if(status===429)return {kind:"net",text:"Rate limited for a moment. Wait a minute and try again."};
+  if(status>=500)return {kind:"net",text:"Claude is busy right now. Try again in a minute."};
+  return {kind:"net",text:"Claude said: "+(msg||("error "+status))};
+}
+async function callClaude(model,text){
+  let r;
+  try{r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":cfg.key.trim(),"anthropic-version":"2026-10-21","anthropic-dangerous-direct-browser-access":"true",...(cfg.ws?{"anthropic-workspace-id":cfg.ws}:{})},
+      body:JSON.stringify({model,max_tokens:S.running?220:400,system:SYS+"\n\nLive context:\n"+context(),messages:[...S.chat.slice(-12),{role:"user",content:text}]})});}
+  catch(e){return {err:explain(0,e.message)};}
+  let j={};try{j=await r.json();}catch(e){}
+  if(!r.ok)return {err:explain(r.status,j.error&&j.error.message)};
+  return {out:(j.content||[]).map(c=>c.text||"").join(" ").trim()};
+}
+S.chat=(store.get("lrc_chat")||[]).slice(-16);
+async function askClaude(text){
+  if(!cfg.key){$("#connect").hidden=false;return null;}
+  status("Thinking…");
+  try{
+    const order=[cfg.model,...MODELS.filter(m=>m!==cfg.model)];let res;
+    for(const m of order){res=await callClaude(m,text);if(!res.err){if(m!==cfg.model){cfg.model=m;$("#cfgModel").value=m;saveCfg();}break;}if(res.err.kind!=="model")break;}
+    if(res.err){chip("#chipAi","bad");S.aiErr=res.err.kind;S.aiErrText=res.err.text;log("sys",res.err.text);
+      if(res.err.kind==="key"){$("#connect").hidden=false;$("#connectMsg").textContent=res.err.text;}return null;}
+    S.chat.push({role:"user",content:text},{role:"assistant",content:res.out});S.chat=S.chat.slice(-16);store.set("lrc_chat",S.chat);
+    chip("#chipAi","on");S.aiErr=null;return res.out;
+  }finally{status("");}
+}
+function keyState(){const el=$("#keyState");if(el)el.textContent=cfg.key?"Claude: connected (key ending "+cfg.key.slice(-4)+")":"Claude: not connected";}
+function noChatLine(){
+  if(!cfg.key)return "I can't chat freely until you connect me. Add your Claude key in the box at the top of the page.";
+  if(S.aiErr==="key")return "My Claude connection isn't working. The reason is shown in the box at the top.";
+  return "I can't reach my brain right now, probably no signal. I'm still tracking your run, and I can do weather, route and stats.";
+}
+async function connectKey(k){
+  k=(k||"").replace(/\s+/g,"")||cfg.key;if(!k)return;cfg.key=k;cfg.ws=($("#wsIn").value||"").trim();saveCfg();$("#connectMsg").textContent="Checking…";
+  if(!/^sk-ant-/.test(k)){$("#connectMsg").textContent="That doesn't look like a Claude API key. Keys start with sk-ant-. Create one at console.anthropic.com under API keys.";return;}
+  const a=await askClaude("Introduce yourself to me in one short sentence.");
+  if(a){$("#connectMsg").textContent="";$("#connect").hidden=true;keyState();log("sys","runSakhi is connected.");await speak(a);}
+  else if(S.aiErr==="key")$("#connectMsg").textContent=S.aiErrText||"Couldn't connect.";
+  else{$("#connect").hidden=true;keyState();log("sys","Key saved. "+(S.aiErrText||"Couldn't reach Claude just now; I'll try again when you talk to me."));}
+}
+/* ---------- Coaching rules (Strava baseline) ---------- */
+function cool(key,ms){const t=Date.now();if(S.cool[key]&&t-S.cool[key]<ms)return false;S.cool[key]=t;return true;}
+function coachTick(){
+  const el=elapsed(),min=el/60000,np=nowPace(),ap=avgPace(),hr=liveHr(),frac=runFrac();
+  const say=[];
+  // 5 km splits vs history
+  const kmDone=Math.floor(S.dist/5000)*5;
+  if(kmDone>=5&&kmDone>S.lastSplitKm){const splitS=(el-S.splitT)/1000/5;S.lastSplitKm=kmDone;S.splitT=el;
+    const diff=Math.round(splitS-HISTORY.easyLongPace);
+    say.push(`${kmDone} kilometres in ${sayTime(el)}. That 5 k averaged ${sayPace(splitS)}, ${Math.abs(diff)<6?"right on your usual long-run pace":`${Math.abs(diff)} seconds ${diff<0?"quicker":"slower"} than your usual ${fmtPace(HISTORY.easyLongPace)}`}.`);}
+  // Too fast early: your HR fades late on long runs
+  if(np&&frac<0.6&&min>8&&np<HISTORY.easyRange[0]-5&&cool("fast",8*60000))
+    say.push(`You're running ${fmtPace(np)}, quicker than your usual long-run ${fmtPace(HISTORY.easyLongPace)}. On your 21 k last week your heart rate was in zone 5 after 15 k. Bank energy, not time. Ease back.`);
+  // Heart rate guard
+  if(hr){const z=zoneOf(hr);
+    if(z>=5&&frac<0.75&&cool("hr5",5*60000))say.push(`Heart rate ${hr}, that's zone 5. Back off until it drops under ${HISTORY.hrZones[3]}.`);
+    else if(z>=4&&frac<0.5&&cool("hr4",8*60000))say.push(`Heart rate ${hr}, zone 4 already. For a long aerobic run try to stay under ${HISTORY.hrZones[2]} in the first half.`);}
+  // Hydration roughly every 25 minutes, fuel every 40 after 45
+  if(min>=24&&cool("water",25*60000)&&S.cool.water!==undefined)say.push("Water check. Take a few sips now, even if you're not thirsty.");
+  if(min>=45&&cool("fuel",40*60000))say.push("Fuel time. Take a gel or a few dates with water, and salt if you're sweating a lot.");
+  // Struggling
+  if(S.lastFeel!=null&&S.lastFeel<=4&&ap&&np&&np>HISTORY.easyRange[1]+30&&cool("walk",10*60000))
+    say.push("You sound tired and the pace is drifting. Try 4 minutes running, 1 minute walking for the next few kilometres.");
+  // Halfway and projection
+  if(hasTarget()&&frac>=0.5&&cool("half",1e9)&&ap){const proj=ap*cfg.target;say.push(`Halfway. At this average you'd finish ${cfg.target} k in ${sayTime(proj*1000)}.${Math.abs(cfg.target-21)<0.6?` Last week's 21 k took ${sayTime(HISTORY.ref21kElapsed*1000)}.`:""}`);}
+  if(hasTarget()&&frac>=1&&cool("done",1e9))say.push(`That's your ${cfg.target} kilometres. Walk it in, stretch, and get some fluids and protein in the next half hour.`);
+  return say;
+}
+// seed: first water reminder at ~24 min
+S.cool.water=undefined;
+
+/* ---------- Check-ins ---------- */
+async function doCheckin(){
+  const el=elapsed();S.nextCheck=el+cfg.checkMin*60000;
+  await speak(`Check-in at ${sayTime(el)}. What's your distance and pace?`);
+  let heard=await listen(9000);
+  if(!heard){await speak("Didn't catch that. Distance and pace?");heard=await listen(8000);}
+  const r=parseRun(heard||"");
+  await speak("And how are you feeling, one to ten?");
+  const fh=await listen(7000);const feel=parseFeel(fh||"");
+  const hr=liveHr();
+  const entry={time:fmtTime(el),said:heard||"(no answer)",dist:r.dist,pace:r.pace,gps:+km1(S.dist),feel,feelSaid:fh,hr};
+  const prev=S.checkins[S.checkins.length-1];S.checkins.push(entry);if(feel!=null){S.lastFeel=feel;$("#vFeel").textContent=feel;}
+  renderTable();
+  let reply=await askClaude(`Check-in. I said: "${heard||"nothing"}". Feeling: "${fh||"no answer"}". React as my coach in two sentences: compare with my previous check-in and my Strava baseline, and tell me one thing to do next.`);
+  if(!reply){
+    const parts=[];
+    if(r.dist!=null&&S.dist>500){const g=S.dist/1000,diff=Math.abs(r.dist-g)/r.dist;if(diff>0.05)parts.push(`Got it, ${r.dist} k. Phone GPS shows ${g.toFixed(1)}, I'll go with your watch.`);else parts.push(`${r.dist} k, matches the GPS.`);}
+    else if(r.dist!=null)parts.push(`${r.dist} k noted.`);
+    if(r.pace){const d=r.pace-HISTORY.easyLongPace;
+      if(prev&&prev.pace){const c=r.pace-prev.pace;parts.push(Math.abs(c)<5?"Pace steady since last check-in.":`${Math.abs(c)} seconds ${c<0?"faster":"slower"} than last check-in.`);}
+      else parts.push(Math.abs(d)<10?"Right on your usual long-run pace.":d<0?`That's ${-d} seconds faster than your usual long-run pace.`:`${d} seconds slower than your usual long-run pace, fine for a long day.`);}
+    if(feel!=null){if(feel<=4)parts.push("Ease off for a few minutes. Water and a gel now.");
+      else if(prev&&prev.feel!=null&&feel<prev.feel-1)parts.push("Feeling's dropped since last time. Hold this pace, don't chase.");
+      else if(feel>=8&&runFrac()<0.6)parts.push("Feeling great is a good sign. Keep it in the bank until the last third.");
+      else parts.push("Good, keep it rolling.");}
+    if(!parts.length)parts.push("No worries, I'll ask again next time. Keep it easy.");
+    reply=parts.join(" ");
+  }
+  await speak(reply);
+}
+
+/* ---------- Main loop ---------- */
+async function guarded(fn){if(S.busy)return;S.busy=true;try{await fn();}catch(e){log("sys",e.message);}finally{S.busy=false;}}
+function turnSoon(){const R=S.route;if(!R)return false;const n=R.turns.find(t=>t.at>R.along+10);return n&&n.at-R.along<350;}
+function tick(){
+  const el=elapsed();
+  $("#vTime").textContent=fmtTime(el);$("#vDist").textContent=(S.dist/1000).toFixed(2);
+  const ap=avgPace(),np=nowPace();$("#vAvg").textContent=fmtPace(ap);$("#vNow").textContent=fmtPace(np);
+  $("#vNow").classList.toggle("fast",!!np&&np<HISTORY.easyRange[0]-5);
+  const hr=liveHr();$("#vHr").textContent=hr||"–";$("#vZone").textContent=hr?"Zone "+zoneOf(hr):"bpm";
+  const R=S.route;const left=R?Math.max(0,R.total-R.along)/1000:(hasTarget()?Math.max(0,cfg.target-S.dist/1000):null);
+  $("#vLeft").textContent=left==null?"Open":left.toFixed(1);$("#vLeftS").textContent=R?"km of route":(left==null?"no set distance":"km of target");
+  if(R){const n=R.turns.find(t=>t.at>R.along+10);$("#vTurn").textContent=n?(n.at-R.along>=1000?km1(n.at-R.along)+"k":Math.round(n.at-R.along)+"m"):"–";$("#vTurnS").textContent=n?n.dir:(R.off>60?`off route ${Math.round(R.off)} m`:"no more turns");}
+  if(S.running&&!S.paused){
+    $("#vNext").textContent=`Next check-in in ${fmtTime(Math.max(0,S.nextCheck-el)).slice(2)}`+(cfg.info!=="off"?` · next update in ${fmtTime(Math.max(0,S.nextInfo-el)).slice(2)}`:"");
+    if(!S.busy){
+      if(S.wantTalk){S.wantTalk=false;talk();}
+      else if(S.queued){const v=S.queued;S.queued=null;log("you",v);guarded(()=>handle(v));}
+      else if(S.alerts.length){const a=S.alerts.splice(0,S.alerts.length).slice(-2).join(" ");guarded(()=>speak(a));}
+      else if(el>=S.nextCheck&&!turnSoon())guarded(doCheckin);
+      else if(cfg.info!=="off"&&el>=S.nextInfo&&S.nextCheck-el>60000&&!turnSoon()){S.nextInfo=el+cfg.infoMin*60000;
+        const kind=cfg.info==="mix"?(S.infoTurn++%2?"news":"weather"):cfg.info;guarded(async()=>speak(kind==="news"?await newsLine():await weatherLine()));}
+      else if(Math.floor(el/1000)%30===0){const c=coachTick();if(c.length)guarded(()=>speak(c.join(" ")));}
+    }
+  }
+  if(!(S.running&&!S.paused)&&!S.busy){if(S.wantTalk){S.wantTalk=false;talk();}else if(S.queued){const v=S.queued;S.queued=null;log("you",v);guarded(()=>handle(v));}}
+  if(Math.floor(Date.now()/1000)%3===0)drawMap();
+}
+
+/* ---------- Controls ---------- */
+async function wakeLock(){try{if("wakeLock" in navigator)S.wake=await navigator.wakeLock.request("screen");}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&S.running)wakeLock();});
+function statsLine(){const ap=avgPace(),np=nowPace(),hr=liveHr();let s=`${sayTime(elapsed())} running, ${km1(S.dist)} kilometres on GPS.`;if(ap)s+=` Average ${sayPace(ap)}.`;if(np)s+=` Last two minutes ${sayPace(np)}.`;if(hr)s+=` Heart rate ${hr}, zone ${zoneOf(hr)}.`;if(S.route)s+=" "+routeLine();return s;}
+async function start(){
+  if(S.running&&!S.paused){S.accum=elapsed();S.paused=true;$("#btnStart").textContent="Resume";await guarded(()=>speak("Paused. Tap resume when you're moving again."));return;}
+  if(S.running&&S.paused){S.t0=Date.now();S.paused=false;S.lastFix=null;$("#btnStart").textContent="Pause";await guarded(()=>speak("Back at it."));return;}
+  S.running=true;S.paused=false;S.t0=Date.now();S.accum=0;S.dist=0;S.pts=[];S.checkins=[];S.lastFix=null;S.lastSplitKm=0;S.splitT=0;S.cool={water:Date.now()-1000};
+  S.nextCheck=cfg.checkMin*60000;S.nextInfo=Math.min(cfg.infoMin,cfg.checkMin/2)*60000;
+  if(S.route){S.route=buildRoute(S.route.name,S.route.pts,S.route.km,S.route.gapList);}
+  $("#btnStart").textContent="Pause";$("#btnEnd").disabled=false;
+  wakeLock();getNews();renderTable();
+  await guarded(async()=>{
+    const w=await weatherLine();
+    await speak(`Hi Pravin, runSakhi here. Let's go. ${hasTarget()?`${cfg.target} kilometres today`:"No set distance today, run as long as feels right"}${S.route?` on the ${S.route.name}`:""}. Your usual long-run pace is ${sayPace(HISTORY.easyLongPace)}, so settle in around there. I'll check in every ${cfg.checkMin} minutes. ${w}`);
+  });
+}
+async function end(){
+  const el=elapsed();S.running=false;S.paused=false;S.accum=el;
+  if(S.watchId!=null){navigator.geolocation.clearWatch(S.watchId);S.watchId=null;}
+  try{S.wake&&S.wake.release()}catch(e){}
+  $("#btnStart").textContent="Start run";$("#btnEnd").disabled=true;
+  const ap=avgPace();const vs=ap?Math.round(ap-HISTORY.easyLongPace):null;
+  await speak(`Run done. ${km1(S.dist)} kilometres in ${sayTime(el)}${ap?` at ${sayPace(ap)}, ${Math.abs(vs)<6?"right on":Math.abs(vs)+" seconds "+(vs<0?"faster than":"slower than")} your usual long-run pace`:""}. Rehydrate, eat, and I'll see you next time.`);
+  startGps();
+}
+async function talk(){
+  if(S.busy){if(pending)return;S.wantTalk=true;try{speechSynthesis.cancel()}catch(e){}status("Go ahead, I'm listening next.");return;}
+  await guarded(async()=>{const raw=await listen(8000);if(!raw){await speak("I didn't hear anything. You can type to me as well.");return;}await handle(raw);});
+}
+async function handle(raw){
+  const t=raw.toLowerCase().trim();
+  const tg=normalise(t).match(/(?:target|goal|today'?s distance|running|run|make it|doing)\s*(?:is\s*|of\s*|to\s*)?(\d+(?:\.\d+)?)\s*(?:k\b|km|kms|kilomet)/);
+  if(tg&&/target|goal|today|make it|doing|i'?ll run|i will run|i am running|i'?m running/.test(t)){setTarget(tg[1]);await speak(`Okay, ${cfg.target} kilometres it is.${S.running&&avgPace()?` At your current average that's about ${sayTime(avgPace()*cfg.target*1000)} in total.`:""}`);return;}
+  if(/no target|open.?ended|no (set )?distance|clear (the )?target/.test(t)){setTarget(null);await speak("No set distance then. Run as long as it feels right, and I'll keep you company.");return;}
+  if(/weather|temperature|humid|rain|hot\b/.test(t))await speak(await weatherLine());
+  else if(/news|headline|market/.test(t))await speak(await newsLine());
+  else if(/route|turn|direction|where|lost/.test(t))await speak(routeLine());
+  else if(/^stats?$|how far|distance so far|my pace|split|how long/.test(t))await speak(statsLine());
+  else if(/check.?in/.test(t)&&S.running)await doCheckin();
+  else if(/^(pause|stop)\b/.test(t)&&S.running&&!S.paused){S.accum=elapsed();S.paused=true;$("#btnStart").textContent="Resume";await speak("Paused.");}
+  else if(/resume|go again/.test(t)&&S.paused){S.t0=Date.now();S.paused=false;S.lastFix=null;$("#btnStart").textContent="Pause";await speak("Resumed.");}
+  else{const r=parseRun(t),f=parseFeel(t);const a=await askClaude(raw);
+    if(a)await speak(a);
+    else if(r.dist!=null||r.pace){await speak(`Noted${r.dist!=null?`, ${r.dist} k`:""}${r.pace?` at ${sayPace(r.pace)}`:""}.${r.pace?(r.pace<HISTORY.easyRange[0]?" That's on the quick side for a long run.":" Nice and controlled."):""}`);}
+    else if(f!=null){S.lastFeel=f;$("#vFeel").textContent=f;await speak(f<=4?"Noted. Slow down a touch, water and fuel now.":"Noted. Keep it smooth.");}
+    else await speak(noChatLine());}
+}
+function sendTyped(v){
+  v=(v||"").trim();if(!v)return;
+  if(pending){pending.fin(v);return;}
+  if(S.busy){S.queued=v;try{speechSynthesis.cancel()}catch(e){}status("Got it, answering next.");return;}
+  log("you",v);guarded(()=>handle(v));
+}
+/* ---------- Table + CSV ---------- */
+function renderTable(){
+  const tb=$("#tbl");tb.innerHTML="";
+  if(!S.checkins.length){tb.innerHTML='<tr><td colspan="6" class="note">Your answers will be logged here.</td></tr>';return;}
+  S.checkins.forEach(c=>{const tr=document.createElement("tr");[c.time,c.dist!=null?c.dist+" km":c.said.slice(0,24),fmtPace(c.pace),c.gps,c.feel??"–",c.hr??"–"].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.appendChild(td);});tb.appendChild(tr);});
+}
+async function copyCsv(){
+  const rows=[["time","said","reported_km","reported_pace","gps_km","feel","hr"],...S.checkins.map(c=>[c.time,`"${(c.said||"").replace(/"/g,"'")}"`,c.dist??"",fmtPace(c.pace),c.gps,c.feel??"",c.hr??""])];
+  const csv=rows.map(r=>r.join(",")).join("\n");
+  try{await navigator.clipboard.writeText(csv);log("sys","Run log copied.");}catch(e){log("sys","Copy failed; long-press the table to select it instead.");}
+}
+
+/* ---------- Setup ---------- */
+function chip(sel,state){const c=$(sel);c.classList.remove("on","bad");if(state)c.classList.add(state);}
+function renderHistory(){
+  const H=HISTORY,lr=H.longRuns;
+  $("#hist").innerHTML="";
+  const cells=[[fmtPace(H.easyLongPace)+"/km","usual flat long-run pace"],[H.weeklyKm[H.weeklyKm.length-1]+" km","this week · "+H.weeklyKm.slice(0,-1).join(" / ")+" before"],
+    [lr[1].km+" km · "+fmtPace(lr[1].pace),"longest recent flat run, "+lr[1].d],["Z2 ≤ "+H.hrZones[1]+" · Z3 ≤ "+H.hrZones[2],"heart-rate zones (bpm)"]];
+  cells.forEach(([b,s])=>{const d=document.createElement("div");const bb=document.createElement("b");bb.textContent=b;const ss=document.createElement("span");ss.textContent=s;d.append(bb,ss);$("#hist").appendChild(d);});
+  $("#histNote").textContent=`From Strava, updated ${H.updated}. Your long runs show heart rate climbing 20 to 40 bpm and reaching zone 5 late, so the coach warns you when early pace runs quicker than ${fmtPace(H.easyRange[0])}. ${H.bigDays}.`;
+}
+function init(){
+  // settings
+  $("#target").value=cfg.target??"";$("#cfgCheck").value=cfg.checkMin;$("#cfgInfo").value=cfg.infoMin;$("#cfgInfoKind").value=cfg.info;
+  const fs=$("#cfgFeed");Object.entries(FEEDS).forEach(([k,f])=>{const o=document.createElement("option");o.value=k;o.textContent=f.name;fs.appendChild(o);});fs.value=cfg.feed;
+  $("#cfgRate").value=cfg.rate;$("#cfgLang").value=cfg.lang;$("#cfgModel").value=cfg.model;
+  const bind=(id,key,num)=>$(id).addEventListener("change",e=>{cfg[key]=num?+e.target.value:e.target.value;saveCfg();if(key==="feed"){S.news=[];}if(key==="key"||key==="model")chip("#chipAi",cfg.key?"":null);});
+  $("#target").addEventListener("change",e=>setTarget(e.target.value));bind("#cfgCheck","checkMin",1);bind("#cfgInfo","infoMin",1);bind("#cfgInfoKind","info");bind("#cfgFeed","feed");bind("#cfgVoice","voice");bind("#cfgRate","rate",1);bind("#cfgLang","lang");bind("#cfgModel","model");
+  // routes
+  const sel=$("#selRoute");ROUTES.forEach(r=>{const o=document.createElement("option");o.value=r.id;o.textContent=`${r.name} · ${r.km} km · ${r.date}`;sel.appendChild(o);});
+  sel.addEventListener("change",()=>{const r=ROUTES.find(x=>x.id===sel.value);cfg.route=sel.value;saveCfg();setRoute(r?buildRoute(r.name,decodePoly(r.poly),r.km,r.gaps):null);});
+  if(cfg.route&&ROUTES.find(r=>r.id===cfg.route)){sel.value=cfg.route;sel.dispatchEvent(new Event("change"));}
+  $("#fileGpx").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;const g=parseGpx(await f.text());if(g.pts.length<2){log("sys","That GPX has no track points.");return;}sel.value="";setRoute(buildRoute(g.name,g.pts));});
+  // buttons
+  $("#connect").hidden=!!cfg.key;$("#wsIn").value=cfg.ws||"";keyState();
+  $("#btnChangeKey").addEventListener("click",()=>{$("#connect").hidden=false;$("#connectMsg").textContent="";$("#connect").scrollIntoView({behavior:"smooth",block:"start"});$("#keyIn").focus();});
+  $("#btnForgetKey").addEventListener("click",()=>{cfg.key="";cfg.ws="";saveCfg();$("#wsIn").value="";keyState();chip("#chipAi",null);$("#connect").hidden=false;log("sys","Claude key removed from this phone.");});
+  $("#connectForm").addEventListener("submit",e=>{e.preventDefault();connectKey($("#keyIn").value);$("#keyIn").value="";});
+  $("#typeForm").addEventListener("submit",e=>{e.preventDefault();const i=$("#chatIn");const v=i.value;i.value="";sendTyped(v);});
+  $("#chatIn").addEventListener("focus",()=>{if(pending)pending.extend();});
+  $("#chatIn").addEventListener("input",()=>{if(pending)pending.extend();});
+  $("#quick").addEventListener("click",e=>{const b=e.target.closest("button[data-q]");if(b)sendTyped(b.dataset.q);});
+  $("#btnStart").addEventListener("click",start);$("#btnEnd").addEventListener("click",end);$("#btnTalk").addEventListener("click",talk);
+  $("#btnCopy").addEventListener("click",copyCsv);$("#btnHr").addEventListener("click",connectHr);
+  $("#btnTest").addEventListener("click",()=>speak(`Hi Pravin, I'm runSakhi. Your usual long-run pace is ${sayPace(HISTORY.easyLongPace)}. Ready when you are.`));
+  // capability checks
+  const probs=[];
+  if(!window.isSecureContext)probs.push("Open this page over https (for example from Netlify or GitHub Pages). GPS and the microphone are blocked otherwise.");
+  if(!SR)probs.push("This browser can't listen. Use Chrome on Android, or Safari on iPhone.");
+  if(!("speechSynthesis" in window))probs.push("This browser can't speak.");
+  if(probs.length){$("#compat").hidden=false;$("#compat").textContent=probs.join(" ");}
+  chip("#chipMic",SR?"on":"bad");chip("#chipAi",cfg.key?"":null);
+  if("speechSynthesis" in window){loadVoices();speechSynthesis.onvoiceschanged=loadVoices;}
+  renderHistory();drawMap();startGps();
+  setInterval(tick,1000);
+}
+init();
+</script>
+</body>
+</html>
