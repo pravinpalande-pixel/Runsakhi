@@ -2,13 +2,13 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Hidden Pair</title>
+<title>Wordwide</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;600&family=JetBrains+Mono:wght@700&display=swap">
 <style>
-/* Layout: one centred column. Four word "slips" in a 2x2 grid, chances as punched holes, guess bar below. */
+/* Layout: one centred column. Four word "slips", chances as punched holes, guess bar below. */
 :root{
   --bg:#EEF0F6; --surface:#FFFFFF; --ink:#1B1F3A; --muted:#5D6385; --line:#CDD1E2;
   --accent:#E3A21A; --accent-ink:#2A1C00; --good:#1E8A5A; --bad:#C2413A; --hint:#8A90B0;
@@ -25,12 +25,19 @@
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-body);margin:0;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
-.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.wrap{max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
 header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
 h1{font:800 clamp(30px,8vw,44px)/1 var(--f-display);letter-spacing:-.02em;margin:0;text-wrap:balance}
 h1 span{color:var(--accent)}
 .stats{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;letter-spacing:.02em}
-.rules{margin:0;color:var(--muted);max-width:60ch}
+.rules{margin:0;color:var(--muted);max-width:62ch}
+.levelbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pill{font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:600;padding:4px 10px;border-radius:999px;
+  background:var(--ink);color:var(--bg)}
+.steps{display:flex;gap:4px}
+.step{width:22px;height:6px;border-radius:3px;background:var(--line)}
+.step.on{background:var(--accent)}
+.levelnote{font-size:13px;color:var(--muted)}
 .meta{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .label{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:600}
 .category{font:600 18px/1.2 var(--f-display);margin-top:2px}
@@ -38,24 +45,27 @@ h1 span{color:var(--accent)}
 .chances{display:flex;gap:8px;align-items:center}
 .hole{width:18px;height:18px;border-radius:50%;border:2px solid var(--accent);background:var(--accent);transition:background .25s}
 .hole.used{background:transparent;border-color:var(--line)}
-.board{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.slip{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 10px 12px;min-width:0;
+.board{display:grid;grid-template-columns:1fr;gap:12px}
+.board.two{grid-template-columns:1fr 1fr}
+.slip{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 12px 12px;min-width:0;
   display:flex;flex-direction:column;align-items:center;gap:8px}
 .slip .tag{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:600}
-.tiles{display:flex;gap:4px;justify-content:center;flex-wrap:nowrap}
-.tile{width:clamp(24px,6.6vw,34px);aspect-ratio:1/1.15;max-width:100%;border-radius:5px;display:grid;place-items:center;
-  font:700 clamp(15px,4.4vw,20px)/1 var(--f-tile);border:2px solid var(--line);color:var(--ink);background:var(--bg)}
+.tiles{display:flex;gap:calc(var(--t,32px)*.55);justify-content:center;flex-wrap:wrap;row-gap:6px;max-width:100%}
+.group{display:flex;gap:3px}
+.tile{width:var(--t,32px);height:calc(var(--t,32px)*1.15);border-radius:5px;display:grid;place-items:center;flex:none;
+  font:700 calc(var(--t,32px)*.58)/1 var(--f-tile);border:2px solid var(--line);color:var(--ink);background:var(--bg)}
 .given .tile{background:var(--ink);border-color:var(--ink);color:var(--bg)}
 .tile.hint{color:var(--hint);border-style:dashed}
+.tile.q{width:auto;padding:0 14px;font-family:var(--f-body);font-size:14px;color:var(--muted);border-style:dashed}
 .found .tile{background:var(--good);border-color:var(--good);color:#fff}
 .missed .tile{background:transparent;border-color:var(--bad);color:var(--bad)}
 .found .tag{color:var(--good)} .missed .tag{color:var(--bad)}
 .pop{animation:pop .35s ease}
-@keyframes pop{50%{transform:scale(1.12)}}
+@keyframes pop{50%{transform:scale(1.06)}}
 .shake{animation:shake .4s ease}
 @keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
 form{display:flex;gap:8px}
-input{flex:1;min-width:0;font:700 20px/1 var(--f-tile);letter-spacing:.18em;text-transform:uppercase;padding:14px;
+input{flex:1;min-width:0;font:700 20px/1 var(--f-tile);letter-spacing:.12em;text-transform:uppercase;padding:14px;
   border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--ink)}
 input:focus{outline:none;border-color:var(--accent)}
 button{font:600 16px/1 var(--f-body);border-radius:10px;border:0;padding:14px 20px;cursor:pointer;background:var(--accent);color:var(--accent-ink)}
@@ -67,6 +77,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .end{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .log{font-size:14px;color:var(--muted);text-align:center;margin:0}
 .log b{font-family:var(--f-tile);color:var(--ink);letter-spacing:.06em}
+.foot{font-size:13px;color:var(--muted);text-align:center;margin:0}
 @media (prefers-reduced-motion:reduce){.pop,.shake{animation:none}.hole{transition:none}}
 </style>
 
@@ -75,7 +86,13 @@ button:disabled{opacity:.45;cursor:not-allowed}
     <h1>Hidden <span>Pair</span></h1>
     <div class="stats" id="stats"></div>
   </header>
-  <p class="rules">Four words share a link. Two are on the board. Find the other two in four guesses. Each miss uncovers a clue: first the link, then letters.</p>
+  <p class="rules">Four words share a link. Two are on the board. Find the other two in four guesses. Any word that fits the link and the letter count counts. A puzzle never comes back, and the game gets harder the longer you play.</p>
+
+  <div class="levelbar">
+    <span class="pill" id="levelName">Warm-up</span>
+    <span class="steps" id="steps"></span>
+    <span class="levelnote" id="levelNote"></span>
+  </div>
 
   <div class="meta">
     <div>
@@ -88,7 +105,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <div class="board" id="board"></div>
 
   <form id="form" autocomplete="off">
-    <input id="guess" maxlength="6" placeholder="Your guess" aria-label="Your guess" autocapitalize="characters" spellcheck="false">
+    <input id="guess" placeholder="Your guess" aria-label="Your guess" autocapitalize="characters" spellcheck="false">
     <button id="go" type="submit">Guess</button>
   </form>
   <p class="msg info" id="msg" role="status"></p>
@@ -96,117 +113,296 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <div class="end">
     <button class="ghost" id="next" type="button">Skip puzzle</button>
   </div>
+  <p class="foot" id="foot"></p>
 </div>
 
 <script>
-const PUZZLES = [
-  {cat:"Seasons", given:["SPRING","SUMMER"], hidden:["AUTUMN","WINTER"]},
-  {cat:"Classical elements", given:["FIRE","WATER"], hidden:["EARTH","AIR"]},
-  {cat:"Compass points", given:["NORTH","EAST"], hidden:["SOUTH","WEST"]},
-  {cat:"The Beatles", given:["JOHN","PAUL"], hidden:["GEORGE","RINGO"]},
-  {cat:"Golf scores", given:["EAGLE","PAR"], hidden:["BIRDIE","BOGEY"]},
-  {cat:"Months of the year", given:["MARCH","MAY"], hidden:["JUNE","JULY"]},
-  {cat:"Playing-card ranks", given:["KING","QUEEN"], hidden:["JACK","ACE"]},
-  {cat:"Directions", given:["UP","LEFT"], hidden:["DOWN","RIGHT"]},
-  {cat:"Arithmetic", given:["PLUS","MINUS"], hidden:["TIMES","DIVIDE"]},
-  {cat:"States of matter", given:["SOLID","GAS"], hidden:["LIQUID","PLASMA"]},
-  {cat:"The senses", given:["SIGHT","SMELL"], hidden:["TASTE","TOUCH"]},
-  {cat:"Bed sizes", given:["TWIN","FULL"], hidden:["QUEEN","KING"]},
-  {cat:"Baseball bases", given:["FIRST","THIRD"], hidden:["SECOND","HOME"]},
-  {cat:"Counting-out rhyme", given:["EENY","MOE"], hidden:["MEENY","MINY"]},
-  {cat:"Getting faster", given:["WALK","SPRINT"], hidden:["JOG","RUN"]},
-  {cat:"It falls from the sky", given:["RAIN","SNOW"], hidden:["HAIL","SLEET"]},
-  {cat:"Little Women sisters", given:["MEG","JO"], hidden:["BETH","AMY"]},
-  {cat:"Basic tastes", given:["SWEET","UMAMI"], hidden:["SOUR","BITTER"]},
+// Word groups: [tier, link, members]. Members are comma-separated; "A|B" means B is also accepted for A.
+const GROUPS = [
+  [1,"Seasons","SPRING,SUMMER,AUTUMN|FALL,WINTER"],
+  [1,"Compass points","NORTH,SOUTH,EAST,WEST"],
+  [1,"Days of the week","MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY,SUNDAY"],
+  [1,"Months of the year","JANUARY,FEBRUARY,MARCH,APRIL,MAY,JUNE,JULY,AUGUST,SEPTEMBER,OCTOBER,NOVEMBER,DECEMBER"],
+  [1,"Colours of the rainbow","RED,ORANGE,YELLOW,GREEN,BLUE,INDIGO,VIOLET"],
+  [1,"Card suits","HEARTS,DIAMONDS,CLUBS,SPADES"],
+  [1,"Numbers one to ten","ONE,TWO,THREE,FOUR,FIVE,SIX,SEVEN,EIGHT,NINE,TEN"],
+  [1,"Directions","UP,DOWN,LEFT,RIGHT"],
+  [1,"States of matter","SOLID,LIQUID,GAS,PLASMA"],
+  [1,"The five senses","SIGHT|VISION,HEARING,SMELL,TASTE,TOUCH"],
+  [1,"Sense organs","EYES,EARS,NOSE,TONGUE,SKIN"],
+  [1,"Classical elements","FIRE,WATER,EARTH,AIR"],
+  [1,"Continents","AFRICA,ANTARCTICA,ASIA,AUSTRALIA|OCEANIA,EUROPE,NORTH AMERICA,SOUTH AMERICA"],
+  [1,"Oceans","PACIFIC,ATLANTIC,INDIAN,ARCTIC,SOUTHERN"],
+  [1,"Planets","MERCURY,VENUS,EARTH,MARS,JUPITER,SATURN,URANUS,NEPTUNE"],
+  [1,"Fingers","THUMB,INDEX,MIDDLE,RING,LITTLE|PINKY|PINKIE"],
+  [1,"Chess pieces","KING,QUEEN,ROOK|CASTLE,BISHOP,KNIGHT,PAWN"],
+  [1,"Precipitation","RAIN,SNOW,HAIL,SLEET,DRIZZLE"],
+  [1,"Swimming strokes","FREESTYLE|FRONT CRAWL|CRAWL,BACKSTROKE,BREASTSTROKE,BUTTERFLY"],
+  [1,"Nations of the UK","ENGLAND,SCOTLAND,WALES,NORTHERN IRELAND"],
+  [1,"Units of time","SECOND,MINUTE,HOUR,DAY,WEEK,FORTNIGHT,MONTH,YEAR,DECADE,CENTURY,MILLENNIUM"],
+  [1,"Court cards and the ace","KING,QUEEN,JACK|KNAVE,ACE"],
+  [2,"Basic tastes","SWEET,SOUR,SALTY,BITTER,UMAMI"],
+  [2,"Arithmetic","PLUS|ADD,MINUS|SUBTRACT,TIMES|MULTIPLY,DIVIDE"],
+  [2,"Golf scores","CONDOR,ALBATROSS,EAGLE,BIRDIE,PAR,BOGEY"],
+  [2,"Types of teeth","INCISOR,CANINE,PREMOLAR,MOLAR"],
+  [2,"Baseball bases","FIRST,SECOND,THIRD,HOME"],
+  [2,"Orchestra sections","STRINGS,WOODWIND,BRASS,PERCUSSION"],
+  [2,"Sol-fa notes","DO|DOH,RE|RAY,MI|ME,FA|FAH,SO|SOL|SOH,LA|LAH,TI|TE|SI"],
+  [2,"The Beatles","JOHN,PAUL,GEORGE,RINGO"],
+  [2,"Seven dwarfs","DOC,GRUMPY,HAPPY,SLEEPY,BASHFUL,SNEEZY,DOPEY"],
+  [2,"Zodiac signs","ARIES,TAURUS,GEMINI,CANCER,LEO,VIRGO,LIBRA,SCORPIO,SAGITTARIUS,CAPRICORN,AQUARIUS,PISCES"],
+  [2,"Chinese zodiac","RAT,OX,TIGER,RABBIT,DRAGON,SNAKE,HORSE,GOAT|SHEEP|RAM,MONKEY,ROOSTER,DOG,PIG"],
+  [2,"Polygons","TRIANGLE,SQUARE,PENTAGON,HEXAGON,HEPTAGON,OCTAGON,NONAGON,DECAGON"],
+  [2,"BRICS founders","BRAZIL,RUSSIA,INDIA,CHINA,SOUTH AFRICA"],
+  [2,"Indian states","ANDHRA PRADESH,ARUNACHAL PRADESH,ASSAM,BIHAR,CHHATTISGARH,GOA,GUJARAT,HARYANA,HIMACHAL PRADESH,JHARKHAND,KARNATAKA,KERALA,MADHYA PRADESH,MAHARASHTRA,MANIPUR,MEGHALAYA,MIZORAM,NAGALAND,ODISHA|ORISSA,PUNJAB,RAJASTHAN,SIKKIM,TAMIL NADU,TELANGANA,TRIPURA,UTTAR PRADESH,UTTARAKHAND|UTTARANCHAL,WEST BENGAL"],
+  [2,"Olympic ring colours","BLUE,YELLOW,BLACK,GREEN,RED"],
+  [2,"Tennis Grand Slams","AUSTRALIAN OPEN,FRENCH OPEN|ROLAND GARROS,WIMBLEDON,US OPEN"],
+  [2,"Hogwarts houses","GRYFFINDOR,HUFFLEPUFF,RAVENCLAW,SLYTHERIN"],
+  [2,"Parts of speech","NOUN,PRONOUN,VERB,ADJECTIVE,ADVERB,PREPOSITION,CONJUNCTION,INTERJECTION,ARTICLE,DETERMINER"],
+  [2,"Nordic countries","DENMARK,FINLAND,ICELAND,NORWAY,SWEDEN"],
+  [2,"Steak doneness","BLUE,RARE,MEDIUM RARE,MEDIUM,MEDIUM WELL,WELL DONE"],
+  [3,"Little Women sisters","MEG,JO,BETH,AMY"],
+  [3,"Santa's reindeer","DASHER,DANCER,PRANCER,VIXEN,COMET,CUPID,DONNER|DONDER,BLITZEN,RUDOLPH"],
+  [3,"Noble gases","HELIUM,NEON,ARGON,KRYPTON,XENON,RADON,OGANESSON"],
+  [3,"Greek letters","ALPHA,BETA,GAMMA,DELTA,EPSILON,ZETA,ETA,THETA,IOTA,KAPPA,LAMBDA,MU,NU,XI,OMICRON,PI,RHO,SIGMA,TAU,UPSILON,PHI,CHI,PSI,OMEGA"],
+  [3,"NATO alphabet","ALFA|ALPHA,BRAVO,CHARLIE,DELTA,ECHO,FOXTROT,GOLF,HOTEL,INDIA,JULIETT|JULIET,KILO,LIMA,MIKE,NOVEMBER,OSCAR,PAPA,QUEBEC,ROMEO,SIERRA,TANGO,UNIFORM,VICTOR,WHISKEY|WHISKY,X-RAY,YANKEE,ZULU"],
+  [3,"First ten elements","HYDROGEN,HELIUM,LITHIUM,BERYLLIUM,BORON,CARBON,NITROGEN,OXYGEN,FLUORINE,NEON"],
+  [3,"Leg bones","FEMUR,TIBIA,FIBULA,PATELLA|KNEECAP"],
+  [3,"Layers of the Earth","CRUST,MANTLE,OUTER CORE,INNER CORE"],
+  [3,"Triangles by sides or angles","EQUILATERAL,ISOSCELES,SCALENE,RIGHT,ACUTE,OBTUSE"],
+  [3,"Types of angle","ACUTE,RIGHT,OBTUSE,STRAIGHT,REFLEX,FULL"],
+  [3,"Quadrilaterals","SQUARE,RECTANGLE,RHOMBUS,PARALLELOGRAM,TRAPEZIUM|TRAPEZOID,KITE"],
+  [3,"South American countries","ARGENTINA,BOLIVIA,BRAZIL,CHILE,COLOMBIA,ECUADOR,GUYANA,PARAGUAY,PERU,SURINAME|SURINAM,URUGUAY,VENEZUELA"],
+  [3,"G7 countries","CANADA,FRANCE,GERMANY,ITALY,JAPAN,UNITED KINGDOM|UK|BRITAIN,UNITED STATES|USA|US|AMERICA"],
+  [3,"SAARC members","AFGHANISTAN,BANGLADESH,BHUTAN,INDIA,MALDIVES,NEPAL,PAKISTAN,SRI LANKA"],
+  [3,"The Pandavas","YUDHISHTHIRA|YUDHISTHIRA|YUDHISHTHIR|YUDHISTHIR,BHIMA|BHIM|BHEEM|BHEEMA,ARJUNA|ARJUN,NAKULA|NAKUL,SAHADEVA|SAHADEV"],
+  [3,"Ways to be out in cricket","BOWLED,CAUGHT,LBW|LEG BEFORE WICKET,RUN OUT,STUMPED,HIT WICKET,OBSTRUCTING THE FIELD,TIMED OUT,HIT THE BALL TWICE"],
+  [3,"Marathon Majors","TOKYO,BOSTON,LONDON,BERLIN,CHICAGO,NEW YORK,SYDNEY"],
+  [3,"Parts of a ship","PORT,STARBOARD,BOW,STERN"],
+  [3,"Musical clefs","TREBLE,BASS,ALTO,TENOR"],
+  [3,"Voice types","SOPRANO,MEZZO-SOPRANO,ALTO|CONTRALTO,TENOR,BARITONE,BASS"],
+  [3,"Taxonomic ranks","DOMAIN,KINGDOM,PHYLUM,CLASS,ORDER,FAMILY,GENUS,SPECIES"],
+  [3,"Great Lakes","SUPERIOR,MICHIGAN,HURON,ERIE,ONTARIO"],
+  [3,"Seven deadly sins","PRIDE,GREED|AVARICE,LUST,ENVY,GLUTTONY,WRATH|ANGER,SLOTH"],
+  [3,"Poker hands","HIGH CARD,PAIR,TWO PAIR,THREE OF A KIND,STRAIGHT,FLUSH,FULL HOUSE,FOUR OF A KIND,STRAIGHT FLUSH,ROYAL FLUSH"],
+  [4,"SI base units","METRE|METER,KILOGRAM,SECOND,AMPERE,KELVIN,MOLE,CANDELA"],
+  [4,"Galilean moons","IO,EUROPA,GANYMEDE,CALLISTO"],
+  [4,"Platonic solids","TETRAHEDRON,CUBE|HEXAHEDRON,OCTAHEDRON,DODECAHEDRON,ICOSAHEDRON"],
+  [4,"Halogens","FLUORINE,CHLORINE,BROMINE,IODINE,ASTATINE,TENNESSINE"],
+  [4,"Layers of the atmosphere","TROPOSPHERE,STRATOSPHERE,MESOSPHERE,THERMOSPHERE,EXOSPHERE"],
+  [4,"Simple machines","LEVER,PULLEY,WHEEL AND AXLE,INCLINED PLANE|RAMP,WEDGE,SCREW"],
+  [4,"Nucleobases","ADENINE,GUANINE,CYTOSINE,THYMINE,URACIL"],
+  [4,"Dwarf planets","CERES,PLUTO,HAUMEA,MAKEMAKE,ERIS"],
+  [4,"Phases of the Moon","NEW MOON,WAXING CRESCENT,FIRST QUARTER,WAXING GIBBOUS,FULL MOON,WANING GIBBOUS,LAST QUARTER|THIRD QUARTER,WANING CRESCENT"],
+  [4,"Main islands of Japan","HONSHU,HOKKAIDO,KYUSHU,SHIKOKU"],
+  [4,"Cardinal virtues","PRUDENCE,JUSTICE,FORTITUDE|COURAGE,TEMPERANCE"],
+  [4,"The Musketeers","ATHOS,PORTHOS,ARAMIS,DARTAGNAN"],
+  [4,"Logic gates","AND,OR,NOT,NAND,NOR,XOR,XNOR"],
+];
+
+// Difficulty rises with puzzles played. "link" and "letters" are the miss counts at which each clue appears.
+const LEVELS = [
+  {name:"Warm-up", from:0,  tiers:[1],   link:0, letters:[1,2,3], lengths:true,  note:"Link shown. Letters appear after misses."},
+  {name:"Steady",  from:5,  tiers:[2,1], link:1, letters:[2,3],   lengths:true,  note:"Link after 1 miss. Letters after 2."},
+  {name:"Tough",   from:12, tiers:[3,2], link:2, letters:[3],     lengths:true,  note:"Link after 2 misses. One letter after 3."},
+  {name:"Expert",  from:20, tiers:[4,3], link:3, letters:[],      lengths:true,  note:"Link after 3 misses. No letter clues."},
+  {name:"Master",  from:30, tiers:[4,3], link:3, letters:[],      lengths:false, note:"Word lengths hidden. Link after 3 misses."},
 ];
 const MAX = 4;
 const $ = id => document.getElementById(id);
+const letters = w => w.toUpperCase().replace(/[^A-Z]/g,"");
+const parse = g => g[2].split(",").map(m => m.split("|"));
+const CATS = GROUPS.map(g => ({tier:g[0], name:g[1], members:parse(g)}));
+
 const store = {
-  get(k,d){try{const v=localStorage.getItem("hp-"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
-  set(k,v){try{localStorage.setItem("hp-"+k,JSON.stringify(v))}catch(e){}}
+  get(k,d){try{const v=localStorage.getItem("hp2-"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem("hp2-"+k,JSON.stringify(v))}catch(e){}}
 };
 let stats = store.get("stats",{played:0,won:0,streak:0,best:0});
-let order = store.get("order",null);
-if(!Array.isArray(order) || order.length!==PUZZLES.length){order=shuffle([...PUZZLES.keys()]);store.set("order",order)}
-let pos = store.get("pos",0) % PUZZLES.length;
-let s; // round state
+let seen = new Set(store.get("seen",[]));
+let recent = store.get("recent",[]);
+let s;
 
-function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const levelFor = n => { let L=0; LEVELS.forEach((l,i)=>{ if(n>=l.from) L=i }); return L };
+const keyOf = (ci,a,b) => `${CATS[ci].name}|${Math.min(a,b)}-${Math.max(a,b)}`;
+const pick = a => a[Math.floor(Math.random()*a.length)];
+
+function unseenPairs(ci){
+  const n=CATS[ci].members.length, out=[];
+  for(let a=0;a<n;a++) for(let b=a+1;b<n;b++) if(!seen.has(keyOf(ci,a,b))) out.push([a,b]);
+  return out;
+}
+function totalLeft(){ return CATS.reduce((t,_,ci)=>t+unseenPairs(ci).length,0) }
+
+// New puzzle: an unseen pair of given words from a group in this level's tiers, avoiding recent groups.
+function generate(level){
+  const L=LEVELS[level];
+  const order=[...L.tiers, ...[1,2,3,4].filter(t=>!L.tiers.includes(t)).sort((x,y)=>y-x)];
+  for(const tier of order){
+    const inTier=CATS.map((c,i)=>i).filter(i=>CATS[i].tier===tier && unseenPairs(i).length);
+    if(!inTier.length) continue;
+    const fresh=inTier.filter(i=>!recent.includes(CATS[i].name));
+    const ci=pick(fresh.length?fresh:inTier);
+    const [a,b]=pick(unseenPairs(ci));
+    const rest=CATS[ci].members.map((m,i)=>i).filter(i=>i!==a&&i!==b);
+    const h1=pick(rest), h2=pick(rest.filter(i=>i!==h1));
+    return {ci, given:[a,b], hidden:[h1,h2], level};
+  }
+  return null;
+}
 
 function start(){
-  const p = PUZZLES[order[pos]];
-  s = {p, used:0, found:[false,false], misses:0, guesses:[], over:false};
-  $("puzzleNo").textContent = `Puzzle ${pos+1} of ${PUZZLES.length}`;
+  let cur=store.get("current",null);
+  if(!cur || !CATS[cur.ci]) {
+    cur=generate(levelFor(stats.played));
+    if(cur){
+      seen.add(keyOf(cur.ci,...cur.given)); store.set("seen",[...seen]);
+      recent=[CATS[cur.ci].name,...recent].slice(0,12); store.set("recent",recent);
+      store.set("current",cur);
+    }
+  }
+  if(!cur){ allDone(); return }
+  const cat=CATS[cur.ci];
+  s={cur, cat, L:LEVELS[cur.level], used:0, misses:0, guesses:[], over:false,
+     slots:cur.hidden.map(i=>({answer:cat.members[i][0], shown:null}))};
+  $("puzzleNo").textContent=`Puzzle ${stats.played+1}`;
   $("guess").value=""; $("guess").disabled=false; $("go").disabled=false;
-  $("next").textContent="Skip puzzle";
-  say("Type a word of up to 6 letters.","info");
-  render(); $("guess").focus({preventScroll:true});
+  $("next").textContent="Skip puzzle"; $("next").hidden=false;
+  say(s.L.lengths?"Type a word, then press Guess.":"Lengths are hidden at this level. Any word that fits the link counts.","info");
+  render();
 }
 
-// Letters shown on an unsolved word, by number of misses so far.
-function hintIdx(word){
-  const idx=new Set();
-  if(s.misses>=2) idx.add(0);
-  if(s.misses>=3) idx.add(word.length-1);
-  return idx;
+function allDone(){
+  $("board").innerHTML=""; $("category").textContent="You have played every puzzle";
+  $("guess").disabled=true; $("go").disabled=true; $("next").hidden=true;
+  say("There are no unseen puzzles left. New word groups will appear here when they are added.","info");
+  renderStats();
 }
 
-function render(animate){
-  const {p}=s;
-  const cat=$("category");
-  if(s.misses>=1||s.over){cat.textContent=p.cat;cat.classList.remove("locked")}
-  else{cat.textContent="Link hidden";cat.classList.add("locked")}
+// Letter positions (in the letters-only form) shown for an unsolved slot.
+function hintPos(word){
+  const w=letters(word), pos=[0, w.length-1, 1], out=new Set();
+  s.L.letters.forEach((atMiss,k)=>{ if(s.misses>=atMiss && pos[k]<w.length) out.add(pos[k]) });
+  return out;
+}
+const linkShown = () => s.over || s.misses>=s.L.link;
+
+function tileSize(words){
+  const w=Math.min($("board").clientWidth||343, 600);
+  const two=$("board").classList.contains("two");
+  const avail=(two?(w-12)/2:w)-26;
+  let best=34;
+  for(const word of words){
+    const parts=word.split(/[\s-]+/), total=parts.reduce((t,p)=>t+p.length,0);
+    const inline=(avail-(total-parts.length)*3-(parts.length-1)*14)/total;
+    const longest=Math.max(...parts.map(p=>p.length));
+    const wrapped=(avail-(longest-1)*3)/longest;
+    best=Math.min(best,Math.max(inline,wrapped));
+  }
+  return Math.max(14,Math.floor(best));
+}
+
+function tilesHTML(word, mode, hints){
+  if(mode==="q") return `<span class="tile q">? letters</span>`;
+  let k=0;
+  return word.split(/[\s-]+/).map(part=>`<span class="group">`+[...part].map(ch=>{
+    const i=k++;
+    if(mode==="show") return `<span class="tile">${ch}</span>`;
+    if(hints.has(i)) return `<span class="tile hint">${ch}</span>`;
+    return `<span class="tile"></span>`;
+  }).join("")+`</span>`).join("");
+}
+
+function lengthLabel(word){
+  const parts=word.split(/[\s-]+/);
+  return parts.length>1 ? parts.map(p=>p.length).join(" + ")+" letters" : `${word.length} letters`;
+}
+
+function render(pop){
+  const {cat,cur}=s;
+  const c=$("category");
+  if(linkShown()){c.textContent=cat.name;c.classList.remove("locked")}
+  else{c.textContent="Link hidden";c.classList.add("locked")}
   $("chances").innerHTML="";
   for(let i=0;i<MAX;i++){const h=document.createElement("span");h.className="hole"+(i<s.used?" used":"");$("chances").append(h)}
   $("chances").setAttribute("aria-label",`${MAX-s.used} guesses left`);
 
-  const board=$("board"); board.innerHTML="";
-  const slips=[...p.given.map(w=>({w,kind:"given"})), ...p.hidden.map((w,i)=>({w,kind:"hidden",i}))];
-  slips.forEach(({w,kind,i})=>{
-    const el=document.createElement("div");
-    let tag="Given", show=true, cls="given";
-    if(kind==="hidden"){
-      if(s.found[i]){cls="found";tag="Found"}
-      else if(s.over){cls="missed";tag="Answer"}
-      else {cls="open";tag=`${w.length} letters`;show=false}
-    }
-    el.className="slip "+cls;
-    if(animate===i && kind==="hidden") el.classList.add("pop");
-    const hints = show?null:hintIdx(w);
-    const tiles=[...w].map((ch,k)=>{
-      if(show) return `<span class="tile">${ch}</span>`;
-      if(hints.has(k)) return `<span class="tile hint">${ch}</span>`;
-      return `<span class="tile"></span>`;
-    }).join("");
-    el.innerHTML=`<span class="tag">${tag}</span><div class="tiles" aria-label="${show?w:tag}">${tiles}</div>`;
-    board.append(el);
+  const given=cur.given.map(i=>cat.members[i][0]);
+  const all=[...given, ...s.slots.map(sl=>sl.shown||sl.answer)];
+  const board=$("board");
+  board.classList.toggle("two", all.every(w=>letters(w).length<=6 && !/\s/.test(w)));
+  board.style.setProperty("--t", tileSize(all)+"px");
+  board.innerHTML="";
+  const add=(cls,tag,inner,anim)=>{
+    const el=document.createElement("div"); el.className="slip "+cls+(anim?" pop":"");
+    el.innerHTML=`<span class="tag">${tag}</span><div class="tiles">${inner}</div>`; board.append(el);
+  };
+  given.forEach(w=>add("given","Given",tilesHTML(w,"show")));
+  s.slots.forEach((sl,i)=>{
+    if(sl.shown) add("found","Found",tilesHTML(sl.shown,"show"),pop===i);
+    else if(s.over) add("missed","Answer",tilesHTML(sl.answer,"show"));
+    else if(!s.L.lengths) add("open","Hidden word",tilesHTML("", "q"));
+    else add("open",lengthLabel(sl.answer),tilesHTML(sl.answer,"blank",hintPos(sl.answer)));
   });
   $("log").innerHTML = s.guesses.length ? "Tried: "+s.guesses.map(g=>`<b>${g}</b>`).join(", ") : "";
+  renderStats();
+}
+
+function renderStats(){
+  const lv=levelFor(stats.played), L=LEVELS[lv], nx=LEVELS[lv+1];
   $("stats").textContent=`Won ${stats.won}/${stats.played} · Streak ${stats.streak} · Best ${stats.best}`;
+  $("levelName").textContent=`Level ${lv+1} · ${(s&&!s.over?s.L:L).name}`;
+  $("steps").innerHTML=LEVELS.map((_,i)=>`<span class="step${i<=lv?" on":""}"></span>`).join("");
+  $("levelNote").textContent=(s&&!s.over?s.L:L).note;
+  $("foot").textContent=(nx?`Level ${lv+2} starts after puzzle ${nx.from}. `:"")+`${totalLeft()} unseen puzzles left.`;
 }
 
 function say(t,kind){const m=$("msg");m.textContent=t;m.className="msg "+kind}
 
+function fits(word, slot){
+  if(letters(word).length!==letters(slot.answer).length) return false;
+  const a=letters(slot.answer), w=letters(word);
+  for(const i of hintPos(slot.answer)) if(w[i]!==a[i]) return false;
+  return true;
+}
+
 function guess(raw){
   if(s.over) return;
-  const g=raw.trim().toUpperCase();
-  if(!/^[A-Z]{1,6}$/.test(g)){say("Use letters only, up to 6.","bad");shake();return}
-  if(s.p.given.includes(g)){say(`${g} is already on the board.`,"info");return}
+  const g=letters(raw);
+  if(!g){say("Type a word using letters.","bad");shake();return}
+  const {cat,cur}=s;
+  const givenIdx=new Set(cur.given);
+  if(cur.given.some(i=>cat.members[i].some(a=>letters(a)===g))){say(`${raw.trim().toUpperCase()} is already on the board.`,"info");return}
   if(s.guesses.includes(g)){say(`You already tried ${g}.`,"info");return}
-  const open=s.p.hidden.map((w,i)=>s.found[i]?null:w);
-  const lens=[...new Set(open.filter(Boolean).map(w=>w.length))];
-  if(!lens.includes(g.length)){say(`The hidden word${lens.length>1?"s have":" has"} ${lens.join(" or ")} letters.`,"info");shake();return}
+  const open=s.slots.map((sl,i)=>sl.shown?null:i).filter(i=>i!==null);
+  if(s.L.lengths){
+    const lens=[...new Set(open.map(i=>letters(s.slots[i].answer).length))];
+    if(!lens.includes(g.length)){say(`The hidden word${lens.length>1?"s have":" has"} ${lens.join(" or ")} letters.`,"info");shake();return}
+  }
 
   s.used++; s.guesses.push(g); $("guess").value="";
-  const hit=open.indexOf(g);
+  const foundNames=new Set(s.slots.filter(sl=>sl.shown).map(sl=>letters(sl.shown)));
+  let hit=-1;
+  const mi=cat.members.findIndex((m,i)=>!givenIdx.has(i) && m.some(a=>letters(a)===g));
+  if(mi>=0 && !cat.members[mi].some(a=>foundNames.has(letters(a)))){
+    const alias=cat.members[mi].find(a=>letters(a)===g);
+    // Prefer the slot whose answer is this exact member, then any open slot the word fits.
+    hit=open.find(i=>cur.hidden[i]===mi);
+    if(hit===undefined) hit=open.find(i=> s.L.lengths ? fits(alias,s.slots[i]) : true);
+    if(hit===undefined) hit=-1;
+    if(hit>=0) s.slots[hit].shown=alias;
+  }
   if(hit>=0){
-    s.found[hit]=true;
-    if(s.found.every(Boolean)){finish(true);render(hit);return}
-    say(`Yes, ${g}! One more to find.`,"good");
+    if(s.slots.every(sl=>sl.shown)){finish(true);render(hit);return}
+    say(`Yes, ${s.slots[hit].shown}! One more to find.`,"good");
   } else {
     s.misses++;
-    const clue = s.misses===1?"The link is now showing.":s.misses===2?"First letters are now showing.":"Last letters are now showing.";
-    say(`${g} isn't one. ${s.used<MAX?clue:""}`,"bad"); shake();
+    const clues=[];
+    if(s.misses===s.L.link) clues.push("The link is now showing.");
+    const k=s.L.letters.indexOf(s.misses);
+    if(k>=0) clues.push(["First letters","Last letters","Second letters"][k]+" are now showing.");
+    const why = mi>=0 ? `${g} fits the link but not the letters shown.` : `${g} isn't one.`;
+    say(`${why} ${s.used<MAX?clues.join(" "):""}`,"bad"); shake();
   }
   if(s.used>=MAX){finish(false);render();return}
   render(hit>=0?hit:undefined);
@@ -217,8 +413,11 @@ function finish(won){
   stats.played++;
   if(won){stats.won++;stats.streak++;stats.best=Math.max(stats.best,stats.streak)}
   else stats.streak=0;
-  store.set("stats",stats);
-  say(won?`Solved in ${s.used} guess${s.used>1?"es":""}.`:`Out of guesses. The link was ${s.p.cat.toLowerCase()}.`, won?"good":"bad");
+  store.set("stats",stats); store.set("current",null);
+  const before=s.cur.level, after=levelFor(stats.played);
+  let t=won?`Solved in ${s.used} guess${s.used>1?"es":""}.`:`Out of guesses. The link was ${s.cat.name}.`;
+  if(after>before) t+=` Level ${after+1}, ${LEVELS[after].name}, starts next.`;
+  say(t, won?"good":"bad");
   $("guess").disabled=true; $("go").disabled=true;
   $("next").textContent="Next puzzle"; $("next").focus({preventScroll:true});
 }
@@ -226,14 +425,13 @@ function finish(won){
 function shake(){const f=$("form");f.classList.remove("shake");void f.offsetWidth;f.classList.add("shake")}
 
 function next(){
-  if(!s.over){stats.played++;stats.streak=0;store.set("stats",stats)}
-  pos=(pos+1)%PUZZLES.length;
-  if(pos===0){order=shuffle(order);store.set("order",order)}
-  store.set("pos",pos); start();
+  if(!s.over){stats.played++;stats.streak=0;store.set("stats",stats);store.set("current",null)}
+  start(); $("guess").focus({preventScroll:true});
 }
 
 $("form").addEventListener("submit",e=>{e.preventDefault();guess($("guess").value)});
 $("next").addEventListener("click",next);
+addEventListener("resize",()=>{ if(s) render() });
 start();
 </script>
 </html>
