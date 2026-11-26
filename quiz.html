@@ -78,6 +78,24 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .log{font-size:14px;color:var(--muted);text-align:center;margin:0}
 .log b{font-family:var(--f-tile);color:var(--ink);letter-spacing:.06em}
 .foot{font-size:13px;color:var(--muted);text-align:center;margin:0}
+.scoreboard{border-top:2px solid var(--line);padding-top:20px;display:flex;flex-direction:column;gap:12px}
+.sb-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.sb-head h2{font:800 24px/1.1 var(--f-display);margin:0}
+.sb-today{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sb-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;counter-reset:r}
+.sb-row{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-radius:8px;background:var(--surface);border:1px solid var(--line)}
+.sb-row.me{border-color:var(--accent);border-width:2px}
+.sb-rank{font:700 15px/1 var(--f-tile);color:var(--muted)}
+.sb-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.sb-sub{display:block;font-size:12px;color:var(--muted);font-weight:400}
+.sb-pts{font:700 18px/1 var(--f-tile);font-variant-numeric:tabular-nums}
+.sb-note{margin:0;font-size:13px;color:var(--muted)}
+.owner h3{font:600 16px/1.3 var(--f-display);margin:8px 0}
+.owner h3 span{font:400 12px var(--f-body);color:var(--muted)}
+.table-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.pop,.shake{animation:none}.hole{transition:none}}
 </style>
 
@@ -86,7 +104,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
     <h1>Hidden <span>Pair</span></h1>
     <div class="stats" id="stats"></div>
   </header>
-  <p class="rules">Four words share a link. Two are on the board. Find the other two in four guesses. Any word that fits the link and the letter count counts. A puzzle never comes back, and the game gets harder the longer you play.</p>
+  <p class="rules">Four words share a link. Two are on the board. Find the other two in four guesses. Any word that fits the link and the letter count counts. Words longer than six letters start with two letters shown. A puzzle never comes back, and it gets harder the longer you play. Solve faster and at higher levels for more points.</p>
 
   <div class="levelbar">
     <span class="pill" id="levelName">Warm-up</span>
@@ -114,6 +132,19 @@ button:disabled{opacity:.45;cursor:not-allowed}
     <button class="ghost" id="next" type="button">Skip puzzle</button>
   </div>
   <p class="foot" id="foot"></p>
+
+  <section class="scoreboard" aria-labelledby="sbTitle">
+    <div class="sb-head">
+      <h2 id="sbTitle">Scoreboard</h2>
+      <span class="sb-today" id="todayCount"></span>
+    </div>
+    <ol class="sb-list" id="scores"></ol>
+    <p class="sb-note" id="scoreNote">Loading the scoreboard…</p>
+    <div class="owner" id="ownerPanel" hidden>
+      <h3>Players per day <span>(India time, visible to you as owner/editor)</span></h3>
+      <div class="table-wrap"><table><thead><tr><th>Date</th><th>Players</th><th>Puzzles</th></tr></thead><tbody id="daily"></tbody></table></div>
+    </div>
+  </section>
 </div>
 
 <script>
@@ -198,6 +229,64 @@ const GROUPS = [
   [4,"Cardinal virtues","PRUDENCE,JUSTICE,FORTITUDE|COURAGE,TEMPERANCE"],
   [4,"The Musketeers","ATHOS,PORTHOS,ARAMIS,DARTAGNAN"],
   [4,"Logic gates","AND,OR,NOT,NAND,NOR,XOR,XNOR"],
+
+  // Geopolitics
+  [2,"The Quad","INDIA,UNITED STATES|USA|US|AMERICA,JAPAN,AUSTRALIA"],
+  [2,"UN veto powers","UNITED STATES|USA|US|AMERICA,UNITED KINGDOM|UK|BRITAIN,FRANCE,RUSSIA,CHINA"],
+  [3,"BRICS members today","BRAZIL,RUSSIA,INDIA,CHINA,SOUTH AFRICA,EGYPT,ETHIOPIA,IRAN,UAE|UNITED ARAB EMIRATES,INDONESIA"],
+  [3,"G20 members","ARGENTINA,AUSTRALIA,BRAZIL,CANADA,CHINA,FRANCE,GERMANY,INDIA,INDONESIA,ITALY,JAPAN,MEXICO,RUSSIA,SAUDI ARABIA,SOUTH AFRICA,SOUTH KOREA|KOREA,TURKEY|TURKIYE,UNITED KINGDOM|UK|BRITAIN,UNITED STATES|USA|US|AMERICA,EUROPEAN UNION|EU,AFRICAN UNION|AU"],
+  [3,"OPEC members","ALGERIA,CONGO,EQUATORIAL GUINEA,GABON,IRAN,IRAQ,KUWAIT,LIBYA,NIGERIA,SAUDI ARABIA,UAE|UNITED ARAB EMIRATES,VENEZUELA"],
+  [3,"Gulf Cooperation Council","BAHRAIN,KUWAIT,OMAN,QATAR,SAUDI ARABIA,UAE|UNITED ARAB EMIRATES"],
+  [3,"Oil and trade chokepoints","HORMUZ|STRAIT OF HORMUZ,MALACCA|STRAIT OF MALACCA,BAB EL MANDEB,GIBRALTAR,BOSPHORUS,SUEZ|SUEZ CANAL,PANAMA|PANAMA CANAL,TAIWAN STRAIT"],
+
+  // Economics and business
+  [1,"Market animals","BULL,BEAR,HAWK,DOVE,STAG,UNICORN,BLACK SWAN"],
+  [2,"Stages of the business cycle","EXPANSION,PEAK,CONTRACTION|RECESSION,TROUGH"],
+  [2,"Sectors of the economy","PRIMARY,SECONDARY,TERTIARY,QUATERNARY"],
+  [2,"Kinds of inflation talk","INFLATION,DEFLATION,DISINFLATION,STAGFLATION,HYPERINFLATION,REFLATION"],
+  [3,"Types of unemployment","FRICTIONAL,STRUCTURAL,CYCLICAL,SEASONAL,DISGUISED"],
+  [3,"Market structures","MONOPOLY,DUOPOLY,OLIGOPOLY,MONOPSONY,OLIGOPSONY,PERFECT COMPETITION,MONOPOLISTIC COMPETITION"],
+  [2,"World currencies","DOLLAR,EURO,YEN,POUND|STERLING,YUAN|RENMINBI,RUPEE,RUBLE|ROUBLE,REAL,WON,FRANC,PESO,RAND,DIRHAM,RIYAL,DONG,BAHT,TAKA,LIRA"],
+  [2,"The C-suite","CEO,CFO,COO,CTO,CMO,CIO,CHRO,CISO"],
+  [3,"Financial statements","BALANCE SHEET,INCOME STATEMENT|PROFIT AND LOSS|P AND L,CASH FLOW STATEMENT|CASH FLOW,STATEMENT OF EQUITY|EQUITY STATEMENT"],
+  [2,"Magnificent Seven stocks","APPLE,MICROSOFT,ALPHABET|GOOGLE,AMAZON,NVIDIA,META|FACEBOOK,TESLA"],
+  [2,"AI assistants","CHATGPT,CLAUDE,GEMINI,COPILOT,GROK,LLAMA|META AI,DEEPSEEK,MISTRAL|LE CHAT,PERPLEXITY,QWEN"],
+
+  // India: economy and business
+  [2,"RBI policy tools","REPO RATE|REPO,REVERSE REPO,MSF|MARGINAL STANDING FACILITY,SDF|STANDING DEPOSIT FACILITY,BANK RATE,CRR|CASH RESERVE RATIO,SLR|STATUTORY LIQUIDITY RATIO,OMO|OPEN MARKET OPERATIONS"],
+  [2,"Indian payment rails","UPI,IMPS,NEFT,RTGS,RUPAY,AEPS,BHIM,FASTAG"],
+  [3,"Indian regulators","RBI,SEBI,IRDAI,PFRDA,IFSCA,TRAI,CCI"],
+  [1,"Quick-commerce apps in India","BLINKIT,ZEPTO,INSTAMART|SWIGGY INSTAMART,BIGBASKET|BB NOW,FLIPKART MINUTES,JIOMART"],
+
+  // India: culture, places, science
+  [2,"Indian classical dances","BHARATANATYAM,KATHAK,KATHAKALI,KUCHIPUDI,ODISSI,MANIPURI,MOHINIYATTAM,SATTRIYA,CHHAU"],
+  [3,"Union territories of India","ANDAMAN AND NICOBAR,CHANDIGARH,DADRA NAGAR HAVELI DAMAN DIU|DADRA AND NAGAR HAVELI AND DAMAN AND DIU,DELHI,JAMMU AND KASHMIR,LADAKH,LAKSHADWEEP,PUDUCHERRY|PONDICHERRY"],
+  [2,"ISRO missions","CHANDRAYAAN,MANGALYAAN,ADITYA L1|ADITYA,GAGANYAAN,ASTROSAT,NISAR,XPOSAT,SPADEX"],
+  [3,"Indian mathematicians","ARYABHATA,BRAHMAGUPTA,BHASKARA|BHASKARACHARYA,RAMANUJAN,MADHAVA,PINGALA,BAUDHAYANA,MAHAVIRA"],
+
+  // Mathematics
+  [1,"Branches of maths","ALGEBRA,GEOMETRY,CALCULUS,TRIGONOMETRY,STATISTICS,PROBABILITY,TOPOLOGY,ARITHMETIC,NUMBER THEORY,COMBINATORICS"],
+  [2,"Statistics measures","MEAN|AVERAGE,MEDIAN,MODE,RANGE,VARIANCE,STANDARD DEVIATION"],
+  [2,"Kinds of numbers","NATURAL,WHOLE,INTEGER,RATIONAL,IRRATIONAL,REAL,COMPLEX,PRIME,IMAGINARY"],
+  [3,"Trigonometric functions","SINE|SIN,COSINE|COS,TANGENT|TAN,COSECANT|COSEC|CSC,SECANT|SEC,COTANGENT|COT"],
+
+  // Sports
+  [1,"Cricket formats","TEST,ODI|ONE DAY,T20,T10,THE HUNDRED|HUNDRED"],
+  [2,"IPL teams","CHENNAI SUPER KINGS|CSK,MUMBAI INDIANS|MI,ROYAL CHALLENGERS BENGALURU|RCB|ROYAL CHALLENGERS BANGALORE,KOLKATA KNIGHT RIDERS|KKR,SUNRISERS HYDERABAD|SRH,DELHI CAPITALS|DC,PUNJAB KINGS|PBKS,RAJASTHAN ROYALS|RR,GUJARAT TITANS|GT,LUCKNOW SUPER GIANTS|LSG"],
+  [3,"India's Paris 2024 medallists","MANU BHAKER|BHAKER,SARABJOT SINGH|SARABJOT,SWAPNIL KUSALE|KUSALE,NEERAJ CHOPRA|CHOPRA,AMAN SEHRAWAT|SEHRAWAT"],
+  [2,"Indian chess stars","ANAND|VISWANATHAN ANAND,GUKESH,PRAGGNANANDHAA|PRAGGNANANDHA|PRAGG,ERIGAISI|ARJUN ERIGAISI,HUMPY|KONERU HUMPY,DIVYA DESHMUKH|DIVYA,HARIKA|HARIKA DRONAVALLI,VIDIT|VIDIT GUJRATHI,VAISHALI"],
+  [2,"FIFA World Cup-winning nations","URUGUAY,ITALY,GERMANY,BRAZIL,ENGLAND,ARGENTINA,FRANCE,SPAIN"],
+  [3,"2026 World Cup host cities","ATLANTA,BOSTON,DALLAS,HOUSTON,KANSAS CITY,LOS ANGELES,MIAMI,NEW YORK|NEW JERSEY|NEW YORK NEW JERSEY,PHILADELPHIA,SAN FRANCISCO|SAN FRANCISCO BAY AREA,SEATTLE,TORONTO,VANCOUVER,MEXICO CITY,GUADALAJARA,MONTERREY"],
+  [2,"Summer Olympic hosts, 2000 to 2032","SYDNEY,ATHENS,BEIJING,LONDON,RIO|RIO DE JANEIRO,TOKYO,PARIS,LOS ANGELES,BRISBANE"],
+
+  // Films and streaming
+  [1,"Indian film industries","BOLLYWOOD,TOLLYWOOD,KOLLYWOOD,MOLLYWOOD,SANDALWOOD,POLLYWOOD,OLLYWOOD"],
+  [2,"Big Indian films of 2026","DHURANDHAR 2|DHURANDHAR THE REVENGE,BORDER 2,DRISHYAM 3,BHOOTH BANGLA,RAMAYANA,MANA SHANKARA VARA PRASAD GARU"],
+  [1,"Streaming apps in India","NETFLIX,PRIME VIDEO|AMAZON PRIME|AMAZON PRIME VIDEO,JIOHOTSTAR|HOTSTAR|JIO HOTSTAR,ZEE5,SONYLIV|SONY LIV,AHA,SUNNXT|SUN NXT,MX PLAYER"],
+  [3,"Best Picture winners, 2020 to 2025","PARASITE,NOMADLAND,CODA,EVERYTHING EVERYWHERE ALL AT ONCE,OPPENHEIMER,ANORA"],
+  [3,"Christopher Nolan films","FOLLOWING,MEMENTO,INSOMNIA,BATMAN BEGINS,THE PRESTIGE|PRESTIGE,THE DARK KNIGHT|DARK KNIGHT,INCEPTION,THE DARK KNIGHT RISES|DARK KNIGHT RISES,INTERSTELLAR,DUNKIRK,TENET,OPPENHEIMER,THE ODYSSEY|ODYSSEY"],
+  [1,"The original Avengers","IRON MAN,CAPTAIN AMERICA,THOR,HULK,BLACK WIDOW,HAWKEYE"],
+  [2,"Film crew roles","DIRECTOR,PRODUCER,EDITOR,CINEMATOGRAPHER,SCREENWRITER,GAFFER,GRIP,CHOREOGRAPHER,COMPOSER"],
 ];
 
 // Difficulty rises with puzzles played. "link" and "letters" are the miss counts at which each clue appears.
@@ -210,7 +299,8 @@ const LEVELS = [
 ];
 const MAX = 4;
 const $ = id => document.getElementById(id);
-const letters = w => w.toUpperCase().replace(/[^A-Z]/g,"");
+const letters = w => w.toUpperCase().replace(/[^A-Z0-9]/g,"");
+const isLong = w => letters(w).length>6;
 const parse = g => g[2].split(",").map(m => m.split("|"));
 const CATS = GROUPS.map(g => ({tier:g[0], name:g[1], members:parse(g)}));
 
@@ -218,7 +308,7 @@ const store = {
   get(k,d){try{const v=localStorage.getItem("hp2-"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
   set(k,v){try{localStorage.setItem("hp2-"+k,JSON.stringify(v))}catch(e){}}
 };
-let stats = store.get("stats",{played:0,won:0,streak:0,best:0});
+let stats = Object.assign({played:0,won:0,streak:0,best:0,points:0}, store.get("stats",{}));
 let seen = new Set(store.get("seen",[]));
 let recent = store.get("recent",[]);
 let s;
@@ -263,7 +353,7 @@ function start(){
   }
   if(!cur){ allDone(); return }
   const cat=CATS[cur.ci];
-  s={cur, cat, L:LEVELS[cur.level], used:0, misses:0, guesses:[], over:false,
+  s={cur, cat, L:LEVELS[cur.level], used:0, misses:0, guesses:[], typed:[], over:false,
      slots:cur.hidden.map(i=>({answer:cat.members[i][0], shown:null}))};
   $("puzzleNo").textContent=`Puzzle ${stats.played+1}`;
   $("guess").value=""; $("guess").disabled=false; $("go").disabled=false;
@@ -283,6 +373,8 @@ function allDone(){
 function hintPos(word){
   const w=letters(word), pos=[0, w.length-1, 1], out=new Set();
   s.L.letters.forEach((atMiss,k)=>{ if(s.misses>=atMiss && pos[k]<w.length) out.add(pos[k]) });
+  // Long answers always start with two letters: the first, plus the start of the second word or the last letter.
+  if(w.length>6){ const parts=word.split(/[\s-]+/); out.add(0); out.add(parts.length>1?parts[0].length:w.length-1) }
   return out;
 }
 const linkShown = () => s.over || s.misses>=s.L.link;
@@ -341,17 +433,17 @@ function render(pop){
   s.slots.forEach((sl,i)=>{
     if(sl.shown) add("found","Found",tilesHTML(sl.shown,"show"),pop===i);
     else if(s.over) add("missed","Answer",tilesHTML(sl.answer,"show"));
-    else if(!s.L.lengths) add("open","Hidden word",tilesHTML("", "q"));
+    else if(!s.L.lengths && !isLong(sl.answer)) add("open","Hidden word",tilesHTML("", "q"));
     else add("open",lengthLabel(sl.answer),tilesHTML(sl.answer,"blank",hintPos(sl.answer)));
   });
-  $("log").innerHTML = s.guesses.length ? "Tried: "+s.guesses.map(g=>`<b>${g}</b>`).join(", ") : "";
+  $("log").innerHTML = s.guesses.length ? "Tried: "+s.typed.map(g=>`<b>${g.replace(/[^A-Z0-9 -]/g,"")}</b>`).join(", ") : "";
   renderStats();
 }
 
 function renderStats(){
   const lv=levelFor(stats.played), L=LEVELS[lv], nx=LEVELS[lv+1];
-  $("stats").textContent=`Won ${stats.won}/${stats.played} · Streak ${stats.streak} · Best ${stats.best}`;
-  $("levelName").textContent=`Level ${lv+1} · ${(s&&!s.over?s.L:L).name}`;
+  $("stats").textContent=`${stats.points} pts · Won ${stats.won}/${stats.played} · Streak ${stats.streak}`;
+  $("levelName").textContent=`Level ${(s&&!s.over?s.cur.level:lv)+1} · ${(s&&!s.over?s.L:L).name}`;
   $("steps").innerHTML=LEVELS.map((_,i)=>`<span class="step${i<=lv?" on":""}"></span>`).join("");
   $("levelNote").textContent=(s&&!s.over?s.L:L).note;
   $("foot").textContent=(nx?`Level ${lv+2} starts after puzzle ${nx.from}. `:"")+`${totalLeft()} unseen puzzles left.`;
@@ -375,12 +467,15 @@ function guess(raw){
   if(cur.given.some(i=>cat.members[i].some(a=>letters(a)===g))){say(`${raw.trim().toUpperCase()} is already on the board.`,"info");return}
   if(s.guesses.includes(g)){say(`You already tried ${g}.`,"info");return}
   const open=s.slots.map((sl,i)=>sl.shown?null:i).filter(i=>i!==null);
-  if(s.L.lengths){
-    const lens=[...new Set(open.map(i=>letters(s.slots[i].answer).length))];
+  const exactMi=cat.members.findIndex((m,i)=>!givenIdx.has(i) && m.some(a=>letters(a)===g));
+  const exactSlot=open.some(i=>cur.hidden[i]===exactMi);
+  const known=open.filter(i=>s.L.lengths||isLong(s.slots[i].answer));
+  if(!exactSlot && known.length===open.length){
+    const lens=[...new Set(known.map(i=>letters(s.slots[i].answer).length))];
     if(!lens.includes(g.length)){say(`The hidden word${lens.length>1?"s have":" has"} ${lens.join(" or ")} letters.`,"info");shake();return}
   }
 
-  s.used++; s.guesses.push(g); $("guess").value="";
+  s.used++; s.guesses.push(g); s.typed.push(raw.trim().toUpperCase()); $("guess").value="";
   const foundNames=new Set(s.slots.filter(sl=>sl.shown).map(sl=>letters(sl.shown)));
   let hit=-1;
   const mi=cat.members.findIndex((m,i)=>!givenIdx.has(i) && m.some(a=>letters(a)===g));
@@ -388,7 +483,7 @@ function guess(raw){
     const alias=cat.members[mi].find(a=>letters(a)===g);
     // Prefer the slot whose answer is this exact member, then any open slot the word fits.
     hit=open.find(i=>cur.hidden[i]===mi);
-    if(hit===undefined) hit=open.find(i=> s.L.lengths ? fits(alias,s.slots[i]) : true);
+    if(hit===undefined) hit=open.find(i=> (s.L.lengths||isLong(s.slots[i].answer)) ? fits(alias,s.slots[i]) : !isLong(alias));
     if(hit===undefined) hit=-1;
     if(hit>=0) s.slots[hit].shown=alias;
   }
@@ -410,12 +505,14 @@ function guess(raw){
 
 function finish(won){
   s.over=true;
-  stats.played++;
+  const pts = won ? 10*(s.cur.level+1) + 5*(MAX-s.used) : 0;
+  stats.played++; stats.points+=pts;
   if(won){stats.won++;stats.streak++;stats.best=Math.max(stats.best,stats.streak)}
   else stats.streak=0;
   store.set("stats",stats); store.set("current",null);
+  record({points:pts, won:won?1:0});
   const before=s.cur.level, after=levelFor(stats.played);
-  let t=won?`Solved in ${s.used} guess${s.used>1?"es":""}.`:`Out of guesses. The link was ${s.cat.name}.`;
+  let t=won?`Solved in ${s.used} guess${s.used>1?"es":""}. +${pts} points.`:`Out of guesses. The link was ${s.cat.name}.`;
   if(after>before) t+=` Level ${after+1}, ${LEVELS[after].name}, starts next.`;
   say(t, won?"good":"bad");
   $("guess").disabled=true; $("go").disabled=true;
@@ -425,7 +522,7 @@ function finish(won){
 function shake(){const f=$("form");f.classList.remove("shake");void f.offsetWidth;f.classList.add("shake")}
 
 function next(){
-  if(!s.over){stats.played++;stats.streak=0;store.set("stats",stats);store.set("current",null)}
+  if(!s.over){stats.played++;stats.streak=0;store.set("stats",stats);store.set("current",null);record({points:0,won:0})}
   start(); $("guess").focus({preventScroll:true});
 }
 
@@ -433,5 +530,88 @@ $("form").addEventListener("submit",e=>{e.preventDefault();guess($("guess").valu
 $("next").addEventListener("click",next);
 addEventListener("resize",()=>{ if(s) render() });
 start();
+
+// ---- Shared scoreboard and daily counts (claude.ai db) ----
+const todayKey = () => new Date().toLocaleDateString("en-CA",{timeZone:"Asia/Kolkata"});
+let db=null, userNs=null, myId=null, players=[], canWrite=true, writeChain=Promise.resolve();
+
+function note(t){ $("scoreNote").textContent=t }
+
+async function initShared(){
+  try{ userNs = await window.claude?.use?.("user"); db = await window.claude?.use?.("db"); }catch(e){ db=null }
+  if(userNs) myId = await userNs.id();
+  if(!db || !myId){ db=null; renderScores(); return }
+  const timer=setTimeout(()=>note("The scoreboard can't be reached yet. Your points are still saved on this device."),10000);
+  db.collection("players").onSnapshot(snap=>{
+    if(!snap.metadata.fromCache) clearTimeout(timer);
+    players=snap.docs.filter(d=>d.exists).map(d=>({id:d.id, ...d.data()}));
+    renderScores();
+  }, ()=>{ clearTimeout(timer); db=null; renderScores() });
+  if(await userNs.canEdit()) $("ownerPanel").hidden=false;
+}
+
+// Add one finished or skipped puzzle to this player's shared row.
+function record(delta){
+  if(!db || !myId || !canWrite) return;
+  writeChain = writeChain.then(async()=>{
+    const mine = players.find(p=>p.id===myId) || {};
+    const days = Object.assign({}, mine.days||{}); const d=todayKey();
+    days[d]=(days[d]||0)+1;
+    const row={ points:(mine.points||0)+delta.points, won:(mine.won||0)+delta.won, played:(mine.played||0)+1,
+      streak:stats.streak, best:Math.max(mine.best||0, stats.best), days, updated:Date.now() };
+    try{ await db.doc("players/"+myId).set(row) }
+    catch(e){
+      if(e?.code==="invalid_argument"){ canWrite=false; note("Your access to this page is view-only, so your points stay on this device.") }
+      else if(e?.code==="unavailable"){ await new Promise(r=>setTimeout(r,800+Math.random()*800)); try{ await db.doc("players/"+myId).set(row) }catch(_){} }
+    }
+  });
+}
+
+async function renderScores(){
+  const list=$("scores"); list.innerHTML="";
+  const d=todayKey();
+  if(!db){
+    $("todayCount").textContent="";
+    addRow(list,1,"You (this device)",`${stats.won} solved of ${stats.played}`,stats.points,true);
+    note("Open this page signed in to claude.ai to join the shared scoreboard. Until then your points are saved on this device.");
+    return;
+  }
+  const today=players.filter(p=>p.days?.[d]>0);
+  const puzzlesToday=today.reduce((t,p)=>t+p.days[d],0);
+  $("todayCount").textContent=`Today: ${today.length} player${today.length===1?"":"s"} · ${puzzlesToday} puzzle${puzzlesToday===1?"":"s"}`;
+  const top=[...players].sort((a,b)=>(b.points||0)-(a.points||0)).slice(0,10);
+  if(myId && !top.some(p=>p.id===myId)){ const me=players.find(p=>p.id===myId); if(me) top.push(me) }
+  const names = userNs && top.length ? await userNs.profiles(top.map(p=>p.id)) : {};
+  list.innerHTML="";
+  const ranked=[...players].sort((a,b)=>(b.points||0)-(a.points||0));
+  top.forEach(p=>{
+    const nm=(names[p.id]?.name)||"Player";
+    addRow(list, ranked.indexOf(p)+1, p.id===myId?`${nm} (you)`:nm, `${p.won||0} solved of ${p.played||0} · best streak ${p.best||0}`, p.points||0, p.id===myId);
+  });
+  note(players.length ? `${players.length} player${players.length===1?"":"s"} so far. Points: 10 × level for each solve, plus 5 for every guess you didn't need.` : "No scores yet. Solve a puzzle to get on the board.");
+  renderDaily();
+}
+
+function addRow(list,rank,name,sub,pts,me){
+  const li=document.createElement("li"); li.className="sb-row"+(me?" me":"");
+  const r=document.createElement("span"); r.className="sb-rank"; r.textContent=rank;
+  const n=document.createElement("span"); n.className="sb-name"; n.textContent=name;
+  const sb=document.createElement("span"); sb.className="sb-sub"; sb.textContent=sub; n.append(sb);
+  const p=document.createElement("span"); p.className="sb-pts"; p.textContent=pts;
+  li.append(r,n,p); list.append(li);
+}
+
+function renderDaily(){
+  if($("ownerPanel").hidden) return;
+  const totals={};
+  players.forEach(p=>Object.entries(p.days||{}).forEach(([day,n])=>{ const t=totals[day]||(totals[day]={players:0,puzzles:0}); t.players++; t.puzzles+=n }));
+  const body=$("daily"); body.innerHTML="";
+  const days=Object.keys(totals).sort().reverse().slice(0,30);
+  if(!days.length){ const tr=document.createElement("tr"); const td=document.createElement("td"); td.colSpan=3; td.textContent="No plays recorded yet."; tr.append(td); body.append(tr); return }
+  days.forEach(day=>{ const tr=document.createElement("tr");
+    [day,totals[day].players,totals[day].puzzles].forEach(v=>{const td=document.createElement("td");td.textContent=v;tr.append(td)}); body.append(tr) });
+}
+
+initShared();
 </script>
 </html>
