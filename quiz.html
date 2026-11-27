@@ -291,11 +291,12 @@ const GROUPS = [
 
 // Difficulty rises with puzzles played. "link" and "letters" are the miss counts at which each clue appears.
 const LEVELS = [
-  {name:"Warm-up", from:0,  tiers:[1],   link:0, letters:[1,2,3], lengths:true,  note:"Link shown. Letters appear after misses."},
-  {name:"Steady",  from:5,  tiers:[2,1], link:1, letters:[2,3],   lengths:true,  note:"Link after 1 miss. Letters after 2."},
-  {name:"Tough",   from:12, tiers:[3,2], link:2, letters:[3],     lengths:true,  note:"Link after 2 misses. One letter after 3."},
-  {name:"Expert",  from:20, tiers:[4,3], link:3, letters:[],      lengths:true,  note:"Link after 3 misses. No letter clues."},
-  {name:"Master",  from:30, tiers:[4,3], link:3, letters:[],      lengths:false, note:"Word lengths hidden. Link after 3 misses."},
+  // maxLen: the longest word (letters only) any of the four words may have at this level.
+  {name:"Warm-up", from:0,  maxLen:5,        tiers:[1,2], link:0, letters:[1,2,3], lengths:true,  note:"Short words, 5 letters at most. Link shown."},
+  {name:"Steady",  from:10, maxLen:7,        tiers:[2,1], link:1, letters:[2,3],   lengths:true,  note:"Words up to 7 letters. Link after 1 miss."},
+  {name:"Tough",   from:17, maxLen:10,       tiers:[3,2], link:2, letters:[3],     lengths:true,  note:"Words up to 10 letters. Link after 2 misses."},
+  {name:"Expert",  from:25, maxLen:Infinity, tiers:[4,3], link:3, letters:[],      lengths:true,  note:"Any length. Link after 3 misses. No letter clues."},
+  {name:"Master",  from:35, maxLen:Infinity, tiers:[4,3], link:3, letters:[],      lengths:false, note:"Short word lengths hidden. Link after 3 misses."},
 ];
 const MAX = 4;
 const $ = id => document.getElementById(id);
@@ -317,9 +318,12 @@ const levelFor = n => { let L=0; LEVELS.forEach((l,i)=>{ if(n>=l.from) L=i }); r
 const keyOf = (ci,a,b) => `${CATS[ci].name}|${Math.min(a,b)}-${Math.max(a,b)}`;
 const pick = a => a[Math.floor(Math.random()*a.length)];
 
-function unseenPairs(ci){
-  const n=CATS[ci].members.length, out=[];
-  for(let a=0;a<n;a++) for(let b=a+1;b<n;b++) if(!seen.has(keyOf(ci,a,b))) out.push([a,b]);
+// Members whose shown form is no longer than maxLen.
+const fitting = (ci,maxLen) => CATS[ci].members.map((m,i)=>i).filter(i=>letters(CATS[ci].members[i][0]).length<=maxLen);
+function unseenPairs(ci, idx=fitting(ci,Infinity)){
+  const out=[];
+  if(idx.length<4) return out;
+  for(let x=0;x<idx.length;x++) for(let y=x+1;y<idx.length;y++) if(!seen.has(keyOf(ci,idx[x],idx[y]))) out.push([idx[x],idx[y]]);
   return out;
 }
 function totalLeft(){ return CATS.reduce((t,_,ci)=>t+unseenPairs(ci).length,0) }
@@ -328,15 +332,19 @@ function totalLeft(){ return CATS.reduce((t,_,ci)=>t+unseenPairs(ci).length,0) }
 function generate(level){
   const L=LEVELS[level];
   const order=[...L.tiers, ...[1,2,3,4].filter(t=>!L.tiers.includes(t)).sort((x,y)=>y-x)];
-  for(const tier of order){
-    const inTier=CATS.map((c,i)=>i).filter(i=>CATS[i].tier===tier && unseenPairs(i).length);
-    if(!inTier.length) continue;
-    const fresh=inTier.filter(i=>!recent.includes(CATS[i].name));
-    const ci=pick(fresh.length?fresh:inTier);
-    const [a,b]=pick(unseenPairs(ci));
-    const rest=CATS[ci].members.map((m,i)=>i).filter(i=>i!==a&&i!==b);
-    const h1=pick(rest), h2=pick(rest.filter(i=>i!==h1));
-    return {ci, given:[a,b], hidden:[h1,h2], level};
+  // Try this level's length cap first; only if every short puzzle is used up, allow longer words.
+  for(const maxLen of [...new Set([L.maxLen, Infinity])]){
+    for(const tier of order){
+      const inTier=CATS.map((c,i)=>i).filter(i=>CATS[i].tier===tier && unseenPairs(i,fitting(i,maxLen)).length);
+      if(!inTier.length) continue;
+      const fresh=inTier.filter(i=>!recent.includes(CATS[i].name));
+      const ci=pick(fresh.length?fresh:inTier);
+      const idx=fitting(ci,maxLen);
+      const [a,b]=pick(unseenPairs(ci,idx));
+      const rest=idx.filter(i=>i!==a&&i!==b);
+      const h1=pick(rest), h2=pick(rest.filter(i=>i!==h1));
+      return {ci, given:[a,b], hidden:[h1,h2], level};
+    }
   }
   return null;
 }
